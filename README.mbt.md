@@ -35,14 +35,14 @@ a level and use just the menu model, or swap in your own wire layer entirely.
 ## Install
 
 ```
-moon add clyzhi/moonsni
+moon add conglinyizhi/moonsni
 ```
 
 For the full tray:
 
 ```
 import {
-  "clyzhi/moonsni/src/tray" @tray,
+  "conglinyizhi/moonsni/src/tray" @tray,
 }
 supported_targets = "+native"
 ```
@@ -51,7 +51,7 @@ For just the menu model (no D-Bus dependency pulled in):
 
 ```
 import {
-  "clyzhi/moonsni/src/menu" @menu,
+  "conglinyizhi/moonsni/src/menu" @menu,
 }
 ```
 
@@ -397,7 +397,7 @@ busctl --user call org.kde.StatusNotifierItem-<pid>-1 \
 
 ```
 moon build --target native
-./_build/native/debug/build/clyzhi/moonsni/cmd/tray-demo/tray-demo.exe
+./_build/native/debug/build/conglinyizhi/moonsni/cmd/tray-demo/tray-demo.exe
 ```
 
 ## Platform & testing scope

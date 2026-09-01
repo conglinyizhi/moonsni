@@ -1,8 +1,8 @@
 import {
-  "clyzhi/moonsni/src/tray",
-  "clyzhi/moonsni/src/menu",
-  "clyzhi/moonsni/src/dbusmenu",
-  "clyzhi/moondbus/src" @dbus,
+  "conglinyizhi/moonsni/src/tray",
+  "conglinyizhi/moonsni/src/menu",
+  "conglinyizhi/moonsni/src/dbusmenu",
+  "conglinyizhi/moondbus/src" @dbus,
 }
 
 supported_targets = "+native"

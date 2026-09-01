@@ -34,9 +34,9 @@ moonsni/
 子包 import 路径（用户侧）：
 
 ```
-clyzhi/moonsni/src/menu   @menu
-clyzhi/moonsni/src/dbusmenu @dbusmenu
-clyzhi/moonsni/src/tray   @tray
+conglinyizhi/moonsni/src/menu   @menu
+conglinyizhi/moonsni/src/dbusmenu @dbusmenu
+conglinyizhi/moonsni/src/tray   @tray
 ```
 
 ## Package conventions

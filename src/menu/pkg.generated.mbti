@@ -1,5 +1,5 @@
 // Generated using `moon info`, DON'T EDIT IT
-package "clyzhi/moonsni/src/menu"
+package "conglinyizhi/moonsni/src/menu"
 
 // Values
 pub fn find_node(Array[MenuNode], Int) -> MenuNode?

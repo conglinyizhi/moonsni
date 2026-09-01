@@ -1,9 +1,9 @@
 // Generated using `moon info`, DON'T EDIT IT
-package "clyzhi/moonsni/src/tray"
+package "conglinyizhi/moonsni/src/tray"
 
 import {
-  "clyzhi/moondbus/src",
-  "clyzhi/moonsni/src/menu",
+  "conglinyizhi/moondbus/src",
+  "conglinyizhi/moonsni/src/menu",
   "moonbitlang/core/debug",
 }
 

@@ -1,7 +1,7 @@
 import {
-  "clyzhi/moonsni/src/menu",
-  "clyzhi/moonsni/src/dbusmenu",
-  "clyzhi/moondbus/src" @dbus,
+  "conglinyizhi/moonsni/src/menu",
+  "conglinyizhi/moonsni/src/dbusmenu",
+  "conglinyizhi/moondbus/src" @dbus,
   "moonbitlang/core/encoding/utf8",
 }
 

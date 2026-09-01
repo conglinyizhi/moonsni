@@ -37,7 +37,7 @@ pub struct Tray {
   cfg : TrayConfig
   menu : @menu.Menu
   mut revision : Int
-  pixmap : Array[PixelIcon]               // 当前像素图标（IconPixmap）
+  pixmap : Array[PixelIcon] // 当前像素图标（IconPixmap）
   mut icon_dirty : Bool // 图标变了，需要发 NewIcon 信号
   mut activate_handler : (Int, Int) -> Unit // 左键：桌面坐标 (x, y)
   mut secondary_handler : (Int, Int) -> Unit // 中键：桌面坐标 (x, y)

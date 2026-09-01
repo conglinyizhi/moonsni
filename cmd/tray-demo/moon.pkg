@@ -1,5 +1,5 @@
 import {
-  "clyzhi/moonsni/src/tray",
+  "conglinyizhi/moonsni/src/tray",
 }
 
 pkgtype(kind: "executable")
