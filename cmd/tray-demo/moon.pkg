@@ -1,7 +1,5 @@
 import {
-  "clyzhi/moonbit-sni/src" @sni,
-  "clyzhi/moonbit-dbus/src" @dbus,
-  "moonbitlang/async/fs" @fs,
+  "clyzhi/moonbit-sni/src/tray" @tray,
 }
 pkgtype(kind: "executable")
 supported_targets = "+native"

@@ -4,12 +4,12 @@
 /// 菜单全部用「描述 key」注册（menu.xxx），文案查翻译表。
 /// 点「Language / 语言」子菜单里的选项，运行时整体切换语言，不用重建菜单。
 fn main {
-  let cfg = @sni.default_tray_config(
+  let cfg = @tray.default_tray_config(
     "moonbit-i18n-demo",
     "MoonBit i18n Demo",
     "applications-system",
   )
-  let t = @sni.tray(cfg)
+  let t = @tray.tray(cfg)
 
   // —— 翻译表（用描述 key）。menu.* 会被 apply_translations 替换 ———
   let zh : Map[String, String] = {

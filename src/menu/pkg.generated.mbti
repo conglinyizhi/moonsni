@@ -1,0 +1,71 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "clyzhi/moonbit-sni/src/menu"
+
+// Values
+pub fn find_node(Array[MenuNode], Int) -> MenuNode?
+
+// Errors
+
+// Types and methods
+pub struct ItemHandle {
+  node : MenuNode
+  menu : Menu
+}
+pub fn ItemHandle::checked(Self) -> Bool
+pub fn ItemHandle::key(Self) -> String
+pub fn ItemHandle::set_checked(Self, Bool) -> Unit
+pub fn ItemHandle::set_enabled(Self, Bool) -> Unit
+pub fn ItemHandle::set_title(Self, String) -> Unit
+pub fn ItemHandle::set_visible(Self, Bool) -> Unit
+pub fn ItemHandle::title(Self) -> String
+pub fn ItemHandle::toggle(Self) -> Unit
+
+pub struct Menu {
+  items : Array[MenuNode]
+  mut next_id : Int
+  mut dirty : Bool
+}
+pub fn Menu::apply_translations(Self, Map[String, String]) -> Unit
+pub fn Menu::checkbox(Self, String, String, Bool, (ItemHandle) -> Unit) -> ItemHandle
+pub fn Menu::clear_dirty(Self) -> Unit
+pub fn Menu::dispatch(Self, Int) -> Bool
+pub fn Menu::get(Self, String) -> ItemHandle?
+pub fn Menu::is_dirty(Self) -> Bool
+pub fn Menu::len(Self) -> Int
+pub fn Menu::new() -> Self
+pub fn Menu::on(Self, String, String, (ItemHandle) -> Unit) -> ItemHandle
+pub fn Menu::separator(Self) -> Unit
+pub fn Menu::submenu(Self, String, String) -> SubMenu
+
+pub struct MenuNode {
+  id : Int
+  key : String
+  mut title : String
+  mut enabled : Bool
+  mut visible : Bool
+  mut checked : Bool
+  kind : NodeKind
+  children : Array[MenuNode]
+  handler : (ItemHandle) -> Unit
+}
+
+pub(all) enum NodeKind {
+  Action
+  Separator
+  Checkbox
+  Submenu
+} derive(Eq)
+
+pub struct SubMenu {
+  menu : Menu
+  node : MenuNode
+}
+pub fn SubMenu::checkbox(Self, String, String, Bool, (ItemHandle) -> Unit) -> ItemHandle
+pub fn SubMenu::handle(Self) -> ItemHandle
+pub fn SubMenu::on(Self, String, String, (ItemHandle) -> Unit) -> ItemHandle
+pub fn SubMenu::separator(Self) -> Unit
+pub fn SubMenu::submenu(Self, String, String) -> Self
+
+// Type aliases
+
+// Traits

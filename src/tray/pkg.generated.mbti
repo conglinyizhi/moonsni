@@ -1,0 +1,41 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "clyzhi/moonbit-sni/src/tray"
+
+import {
+  "clyzhi/moonbit-sni/src/menu",
+}
+
+// Values
+pub fn default_tray_config(String, String, String) -> TrayConfig
+
+pub fn run_tray(TrayConfig) -> Result[Unit, Int]
+
+pub fn tray(TrayConfig) -> Tray
+
+// Errors
+
+// Types and methods
+pub struct Tray {
+  cfg : TrayConfig
+  menu : @menu.Menu
+  mut revision : Int
+}
+pub fn Tray::apply_translations(Self, Map[String, String]) -> Unit
+pub fn Tray::checkbox(Self, String, String, Bool, (@menu.ItemHandle) -> Unit) -> @menu.ItemHandle
+pub fn Tray::item(Self, String) -> @menu.ItemHandle?
+pub fn Tray::on(Self, String, String, (@menu.ItemHandle) -> Unit) -> @menu.ItemHandle
+pub fn Tray::run(Self) -> Result[Unit, Int]
+pub fn Tray::separator(Self) -> Unit
+pub fn Tray::submenu(Self, String, String) -> @menu.SubMenu
+
+pub struct TrayConfig {
+  id : String
+  title : String
+  icon_name : String
+  status : String
+  category : String
+}
+
+// Type aliases
+
+// Traits

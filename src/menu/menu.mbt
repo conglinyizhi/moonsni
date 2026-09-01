@@ -6,8 +6,8 @@
 /// 支持普通项、分割线、复选框、以及任意层数的子菜单。
 
 ///|
-/// 菜单项类型。
-pub enum NodeKind {
+/// 菜单项类型。变体通过 `pub(all)` 暴露，供 dbusmenu 子包跨包匹配。
+pub(all) enum NodeKind {
   Action      // 普通可点项
   Separator   // 分割线
   Checkbox    // 复选框
@@ -240,7 +240,8 @@ pub fn SubMenu::handle(self : SubMenu) -> ItemHandle {
 
 ///|
 /// 按 dbusmenu id 递归查找节点。
-fn find_node(items : Array[MenuNode], id : Int) -> MenuNode? {
+/// 按 dbusmenu id 递归查找节点（供 dbusmenu 编解码跨包使用）。
+pub fn find_node(items : Array[MenuNode], id : Int) -> MenuNode? {
   let mut i = 0
   while i < items.length() {
     let n = items[i]

@@ -1,0 +1,7 @@
+import {
+  "clyzhi/moonbit-sni/src/menu" @menu,
+  "clyzhi/moonbit-sni/src/dbusmenu" @dbusmenu,
+  "clyzhi/moonbit-dbus/src" @dbus,
+  "moonbitlang/core/encoding/utf8" @utf8,
+}
+supported_targets = "+native"

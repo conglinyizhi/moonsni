@@ -35,14 +35,14 @@ pub fn default_tray_config(
 /// 一个托盘（图标 + 右键菜单）。
 pub struct Tray {
   cfg : TrayConfig
-  menu : Menu
+  menu : @menu.Menu
   mut revision : Int
 }
 
 ///|
 /// 新建托盘。
 pub fn tray(cfg : TrayConfig) -> Tray {
-  { cfg, menu: Menu::new(), revision: 1 }
+  { cfg, menu: @menu.Menu::new(), revision: 1 }
 }
 
 ///|
@@ -51,8 +51,8 @@ pub fn Tray::on(
   self : Tray,
   key : String,
   title : String,
-  handler : (ItemHandle) -> Unit,
-) -> ItemHandle {
+  handler : (@menu.ItemHandle) -> Unit,
+) -> @menu.ItemHandle {
   self.menu.on(key, title, handler)
 }
 
@@ -69,20 +69,20 @@ pub fn Tray::checkbox(
   key : String,
   title : String,
   checked : Bool,
-  handler : (ItemHandle) -> Unit,
-) -> ItemHandle {
+  handler : (@menu.ItemHandle) -> Unit,
+) -> @menu.ItemHandle {
   self.menu.checkbox(key, title, checked, handler)
 }
 
 ///|
 /// 新建一个子菜单，返回构建器（可继续嵌套）。
-pub fn Tray::submenu(self : Tray, key : String, title : String) -> SubMenu {
+pub fn Tray::submenu(self : Tray, key : String, title : String) -> @menu.SubMenu {
   self.menu.submenu(key, title)
 }
 
 ///|
 /// 按 key 取菜单项句柄（递归查找）。
-pub fn Tray::item(self : Tray, key : String) -> ItemHandle? {
+pub fn Tray::item(self : Tray, key : String) -> @menu.ItemHandle? {
   self.menu.get(key)
 }
 
@@ -198,12 +198,12 @@ fn Tray::handle(
     // 入参 (parentID, recursionDepth, propertyNames)。前 8 字节是 i32 + i32。
     let parent_id = read_i32_at(m.body, 0)
     let depth = read_i32_at(m.body, 4)
-    let layout = encode_layout(self.menu, self.revision, parent_id, depth)
+    let layout = @dbusmenu.encode_layout(self.menu, self.revision, parent_id, depth)
     reply(conn, dest, m.serial, layout, "u(ia{sv}av)", serial)
   } else if iface == "com.canonical.dbusmenu" && name == "AboutToShow" {
-    reply(conn, dest, m.serial, encode_bool(false), "b", serial)
+    reply(conn, dest, m.serial, @dbusmenu.encode_bool(false), "b", serial)
   } else if iface == "com.canonical.dbusmenu" && name == "Event" {
-    let (id, ev) = parse_event(m.body)
+    let (id, ev) = @dbusmenu.parse_event(m.body)
     if ev == "clicked" {
       let _ = self.menu.dispatch(id)
     }

@@ -7,11 +7,25 @@ freedesktop [StatusNotifierItem](https://www.freedesktop.org/wiki/Specifications
 No `libappindicator`, no Qt, no GTK. The D-Bus protocol and the SNI service are
 both written in MoonBit.
 
-## What it does
+## Progressive by design
 
-Registers your program as a tray item with the desktop's status notifier host
-(KDE Plasma, XFCE, Cinnamon, LXQt, GNOME with an extension) and serves the
-property queries the host makes — so your icon shows up in the system tray.
+`moonbit-sni` is not a framework you have to adopt wholesale. It is built as
+**three independent packages**, so you take only what you need:
+
+| Package | What it gives you | Depends on |
+|---|---|---|
+| `moonbit-sni/src/menu` | Pure menu **data model** — `Menu`, `ItemHandle`, `SubMenu`, checkboxes, i18n. No D-Bus at all. | nothing |
+| `moonbit-sni/src/dbusmenu` | Pure `com.canonical.dbusmenu` **wire codec** — encode a menu tree, parse events. | `menu` + moonbit-dbus encoder |
+| `moonbit-sni/src/tray` | The full **tray** — connect to the bus, register the item, serve requests. | `menu` + `dbusmenu` + moonbit-dbus |
+
+This mirrors Vue's spectrum: use the whole thing for a quick tray, or drop down
+a level and use just the menu model, or swap in your own wire layer entirely.
+
+- **Just want a tray?** `@tray.tray(cfg)` + `.on(...)` + `.run()`. One line each.
+- **Only need a menu, no D-Bus?** Use `@menu.Menu` on its own — it is pure data.
+- **Serving your own menu, want to reuse the codec?** Call `@dbusmenu.encode_layout`.
+- **Want a different transport?** Write your own package that feeds `menu` and
+  drives `dbusmenu` — `tray` is simply one such wiring.
 
 ## Install
 
@@ -19,13 +33,21 @@ property queries the host makes — so your icon shows up in the system tray.
 moon add clyzhi/moonbit-sni
 ```
 
-`moon.pkg`:
+For the full tray:
 
 ```
 import {
-  "clyzhi/moonbit-sni/src" @sni,
+  "clyzhi/moonbit-sni/src/tray" @tray,
 }
 supported_targets = "+native"
+```
+
+For just the menu model (no D-Bus dependency pulled in):
+
+```
+import {
+  "clyzhi/moonbit-sni/src/menu" @menu,
+}
 ```
 
 ## Quick start
@@ -35,12 +57,12 @@ handle back that lets you change that item at any time.
 
 ```
 fn main {
-  let cfg = @sni.default_tray_config(
+  let cfg = @tray.default_tray_config(
     "my-app",                 // Id
     "My Application",         // Title
     "applications-system",    // IconName from the freedesktop icon theme
   )
-  let t = @sni.tray(cfg)
+  let t = @tray.tray(cfg)
 
   let count = Array::make(1, 0)
   t.on("hello", "Hello", fn(item) {
@@ -113,7 +135,7 @@ at runtime — without rebuilding the menu:
 let zh : Map[String, String] = { "menu.file": "文件", "menu.new": "新建文档", ... }
 let en : Map[String, String] = { "menu.file": "File", "menu.new": "New document", ... }
 
-let t = @sni.tray(cfg)
+let t = @tray.tray(cfg)
 t.submenu("menu.file", en["menu.file"])
   |> ignore
 t.on("menu.new", en["menu.new"], fn(item) { ... }) |> ignore
@@ -165,18 +187,33 @@ Properties served: `Category`, `Id`, `Title`, `Status`, `IconName`,
 `Menu` (object path), `ItemIsMenu`.
 
 > **Note:** `Menu` must be present in the `GetAll` reply, otherwise the desktop
-> does not know the item has a menu and right-clicking does nothing. This one
-> cost us an afternoon.
+> does not know the item has a menu and right-clicking does nothing. `ItemIsMenu`
+> should be `true` so the desktop renders a single flat menu rather than treating
+> the item as an activation target.
 
 Menu interface (`com.canonical.dbusmenu` at `/MenuBar`):
 
 | Method | Behaviour |
 |---|---|
-| `GetLayout` | Returns the menu tree as `(u(ia{sv}av))` |
+| `GetLayout` | Returns the menu tree as `(u(ia{sv}av))`. Honours the `parentID` argument so the desktop can fetch a submenu's content independently. |
 | `Event` | `clicked` events are routed to the handler registered for that id |
 | `AboutToShow` | Returns `false` (no dynamic rebuild needed) |
 
+### Protocol detail notes
+
+Two things cost us debugging time and are worth documenting:
+
+1. **`toggle-type` / `toggle-state` must be present on every item** (an empty
+   string / `0` for plain actions and submenus). KDE uses them to distinguish
+   item types; without them a submenu can be rendered as the whole parent menu.
+2. **`GetLayout` receives a `parentID`** (0 for the root, a submenu's id when the
+   desktop wants just that submenu). Reply with the corresponding subtree root,
+   not the whole menu every time — otherwise clicking a submenu shows the entire
+   parent menu again.
+
 ## API
+
+### Tray package (`@tray`)
 
 | Function | Purpose |
 |---|---|
@@ -184,17 +221,30 @@ Menu interface (`com.canonical.dbusmenu` at `/MenuBar`):
 | `Tray::on(key, title, handler)` | Register a menu item, returns a handle |
 | `Tray::item(key)` | Look up a handle by key |
 | `Tray::run()` | Register with the desktop and serve (blocks) |
-| `ItemHandle::set_title(s)` | Change the label; desktop refreshes |
-| `ItemHandle::set_enabled(b)` | Enable / disable the item |
-| `ItemHandle::set_visible(b)` | Show / hide the item |
-| `ItemHandle::set_checked(b)` | Set the checkbox state |
-| `ItemHandle::toggle()` | Flip the checkbox state |
-| `ItemHandle::title()` / `checked()` / `key()` | Read current state |
-| `Menu::separator()` | Add a divider |
-| `Menu::checkbox(key, title, checked, h)` | Add a checkbox |
-| `Menu::submenu(key, title)` | Add a submenu (returns a builder) |
-| `SubMenu::on/checkbox/separator/submenu` | Nest further |
+| `Tray::separator()` | Add a divider |
+| `Tray::checkbox(key, title, checked, h)` | Add a checkbox |
+| `Tray::submenu(key, title)` | Add a submenu (returns a builder) |
+| `Tray::apply_translations(table)` | Switch language |
 | `run_tray(cfg)` | Shortcut for a tray with no menu |
+
+### Menu package (`@menu`)
+
+| Function | Purpose |
+|---|---|
+| `Menu::new()` | Create an empty menu |
+| `Menu::on(key, title, handler)` | Add an action, returns a handle |
+| `Menu::checkbox(key, title, checked, h)` | Add a checkbox |
+| `Menu::submenu(key, title)` | Add a submenu |
+| `Menu::separator()` | Add a divider |
+| `Menu::get(key)` | Look up a handle |
+| `Menu::dispatch(id)` | Route a click by id |
+| `Menu::apply_translations(table)` | Switch language |
+| `SubMenu::on/checkbox/separator/submenu` | Nest further |
+
+### Handles
+
+Every handle has `set_title`, `set_enabled`, `set_visible`, `set_checked`,
+`toggle`, `title`, `checked`, `key`.
 
 ## Configuration
 
@@ -234,7 +284,7 @@ busctl --user call org.kde.StatusNotifierItem-<pid>-1 \
 
 ```
 moon build --target native
-./_build/native/debug/build/cmd/tray-demo/tray-demo.exe
+./_build/native/debug/build/clyzhi/moonbit-sni/cmd/tray-demo/tray-demo.exe
 ```
 
 ## Status & limitations
@@ -244,6 +294,8 @@ Works today:
 - Registering a tray item and keeping it alive
 - Serving `Get` / `GetAll` for all properties above
 - Right-click context menu with click routing and live title updates
+- Submenus of arbitrary depth
+- Runtime i18n switching (verified: whole menu switches language live)
 - Verified on KDE Plasma 6 (Wayland)
 
 Not implemented yet:
@@ -253,6 +305,15 @@ Not implemented yet:
 - `IconPixmap` (raw pixel icons), `ToolTip`, `AttentionIconName`
 - `NewIcon` / `NewStatus` signals
 - Removing menu items after registration
+
+## Roadmap
+
+- **Windows**: D-Bus has no unix-socket transport on Windows — the reference
+  `dbus-daemon` uses TCP loopback (`autolaunch:` / `tcp:host=localhost,port=NNNN`).
+  The `menu` and `dbusmenu` packages are already independent of any transport, so
+  a future Windows backend only needs to plug in a D-Bus transport layer; the tray
+  logic and menu codec are reused as-is. No Windows hardware is available to test
+  this yet.
 
 ## License
 

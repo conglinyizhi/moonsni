@@ -16,5 +16,4 @@ preferred_target = "native"
 
 import {
   "clyzhi/moonbit-dbus@0.1.0",
-  "moonbitlang/async@0.21.2",
 }
