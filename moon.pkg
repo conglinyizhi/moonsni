@@ -1,0 +1,7 @@
+import {
+  "clyzhi/moonsni/src/tray" @tray,
+  "clyzhi/moonsni/src/menu" @menu,
+  "clyzhi/moonsni/src/dbusmenu" @dbusmenu,
+  "clyzhi/moondbus/src" @dbus,
+}
+supported_targets = "+native"
