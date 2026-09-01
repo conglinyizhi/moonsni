@@ -400,6 +400,26 @@ moon build --target native
 ./_build/native/debug/build/clyzhi/moonsni/cmd/tray-demo/tray-demo.exe
 ```
 
+## Platform & testing scope
+
+**Tested only on the author's local machine** — KDE Plasma 6 (Wayland) on the
+same Arch-based Linux system the library was developed on. This is a
+**single-environment verification**:
+
+- Only KDE Plasma 6 / Wayland has been exercised (right-click menu, pointer /
+  scroll events, i18n switching, `NewIcon` / `LayoutUpdated` signals).
+- **Not** verified on other desktops: XFCE, Cinnamon, LXQt, GNOME + extension,
+  or any other StatusNotifierItem host.
+- **Not** verified on other platforms: only Linux / native backend is built;
+  no Windows or macOS testing has been done (D-Bus has no unix-socket transport
+  on Windows, see the roadmap).
+- **Not** verified on a different mooncakes / toolchain set beyond the nightly
+  toolchain used for development.
+
+If you run this on a different desktop or distribution and hit a problem, it
+would be valuable to report it — the behavior may just not have been tested
+here yet.
+
 ## Status & limitations
 
 Works today:
