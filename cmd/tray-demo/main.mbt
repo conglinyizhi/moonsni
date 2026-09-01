@@ -88,6 +88,19 @@ fn main {
   // 初始按英文显示
   t.apply_translations(en)
 
+  // —— 左键 / 中键 / 滚轮事件（SNI Activate / SecondaryActivate / Scroll）——
+  t.on_click(fn(x, y) {
+    println("left-click at (\{x}, \{y})")
+  })
+  t.on_middle_click(fn(x, y) {
+    println("middle-click at (\{x}, \{y})")
+  })
+  t.on_scroll(fn(delta, orientation) {
+    let dir = if delta > 0 { "up" } else { "down" }
+    let axis = if orientation == 0 { "vertical" } else { "horizontal" }
+    println("scroll \{dir} (delta=\{delta}, \{axis})")
+  })
+
   println("i18n tray start")
   match t.run() {
     Err(e) => println("tray failed errno=\{e}")

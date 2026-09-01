@@ -19,11 +19,17 @@ pub struct Tray {
   cfg : TrayConfig
   menu : @menu.Menu
   mut revision : Int
+  mut activate_handler : (Int, Int) -> Unit
+  mut secondary_handler : (Int, Int) -> Unit
+  mut scroll_handler : (Int, Int) -> Unit
 }
 pub fn Tray::apply_translations(Self, Map[String, String]) -> Unit
 pub fn Tray::checkbox(Self, String, String, Bool, (@menu.ItemHandle) -> Unit) -> @menu.ItemHandle
 pub fn Tray::item(Self, String) -> @menu.ItemHandle?
 pub fn Tray::on(Self, String, String, (@menu.ItemHandle) -> Unit) -> @menu.ItemHandle
+pub fn Tray::on_click(Self, (Int, Int) -> Unit) -> Unit
+pub fn Tray::on_middle_click(Self, (Int, Int) -> Unit) -> Unit
+pub fn Tray::on_scroll(Self, (Int, Int) -> Unit) -> Unit
 pub fn Tray::run(Self) -> Result[Unit, Int]
 pub fn Tray::separator(Self) -> Unit
 pub fn Tray::submenu(Self, String, String) -> @menu.SubMenu

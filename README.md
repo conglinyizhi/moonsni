@@ -174,14 +174,22 @@ t.on("scan", "Scan document", fn(item) {
 
 ```
 run_tray()
-  ├─ connect to the session bus + SASL auth        (moondbus)
+  ├─ connect to the session bus + SASL auth        (moondbus Server)
   ├─ Hello handshake
   ├─ RequestName  org.kde.StatusNotifierItem-<pid>-1
   ├─ RegisterStatusNotifierItem  → status notifier watcher
-  └─ serve loop
-       ├─ org.freedesktop.DBus.Properties.Get     → single property
-       └─ org.freedesktop.DBus.Properties.GetAll  → a{sv} of all properties
+  └─ serve loop  (moondbus Server::serve)
+       ├─ org.freedesktop.DBus.Properties.Get      → single property
+       ├─ org.freedesktop.DBus.Properties.GetAll   → a{sv} of all properties
+       ├─ com.canonical.dbusmenu.GetLayout/Event/AboutToShow  → menu
+       ├─ org.kde.StatusNotifierItem.Activate             → on_click(x, y)
+       ├─ org.kde.StatusNotifierItem.SecondaryActivate    → on_middle_click(x, y)
+       └─ org.kde.StatusNotifierItem.Scroll               → on_scroll(delta, dir)
 ```
+
+The serve loop is provided by `moondbus`'s `Server` (a reusable D-Bus service
+loop), so any future service — MPRIS player, custom object export — can reuse
+it instead of hand-writing `recv` / `parse` / `reply`.
 
 Properties served: `Category`, `Id`, `Title`, `Status`, `IconName`,
 `Menu` (object path), `ItemIsMenu`.
@@ -225,6 +233,9 @@ Two things cost us debugging time and are worth documenting:
 | `Tray::checkbox(key, title, checked, h)` | Add a checkbox |
 | `Tray::submenu(key, title)` | Add a submenu (returns a builder) |
 | `Tray::apply_translations(table)` | Switch language |
+| `Tray::on_click(fn(x, y))` | Left-click activation (`Activate`) |
+| `Tray::on_middle_click(fn(x, y))` | Middle-click (`SecondaryActivate`) |
+| `Tray::on_scroll(fn(delta, dir))` | Mouse wheel (`Scroll`), dir 0=vertical 1=horizontal |
 | `run_tray(cfg)` | Shortcut for a tray with no menu |
 
 ### Menu package (`@menu`)
@@ -294,6 +305,7 @@ Works today:
 - Registering a tray item and keeping it alive
 - Serving `Get` / `GetAll` for all properties above
 - Right-click context menu with click routing and live title updates
+- Left / middle / scroll events (`Activate`, `SecondaryActivate`, `Scroll`)
 - Submenus of arbitrary depth
 - Runtime i18n switching (verified: whole menu switches language live)
 - Verified on KDE Plasma 6 (Wayland)
@@ -301,7 +313,6 @@ Works today:
 Not implemented yet:
 
 - Radio groups / toggle-only-radio behavior
-- Left-click activation (`Activate`, `SecondaryActivate`, `Scroll`)
 - `IconPixmap` (raw pixel icons), `ToolTip`, `AttentionIconName`
 - `NewIcon` / `NewStatus` signals
 - Removing menu items after registration

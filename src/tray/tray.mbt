@@ -33,16 +33,27 @@ pub fn default_tray_config(
 
 ///|
 /// 一个托盘（图标 + 右键菜单）。
+/// 除了右键菜单，还能响应左键 / 中键（同键）点击与滚轮。
 pub struct Tray {
   cfg : TrayConfig
   menu : @menu.Menu
   mut revision : Int
+  mut activate_handler : (Int, Int) -> Unit   // 左键：桌面坐标 (x, y)
+  mut secondary_handler : (Int, Int) -> Unit  // 中键：桌面坐标 (x, y)
+  mut scroll_handler : (Int, Int) -> Unit     // 滚轮：(delta, orientation)
 }
 
 ///|
 /// 新建托盘。
 pub fn tray(cfg : TrayConfig) -> Tray {
-  { cfg, menu: @menu.Menu::new(), revision: 1 }
+  {
+    cfg,
+    menu: @menu.Menu::new(),
+    revision: 1,
+    activate_handler: fn(_x, _y) { },
+    secondary_handler: fn(_x, _y) { },
+    scroll_handler: fn(_d, _o) { },
+  }
 }
 
 ///|
@@ -93,32 +104,49 @@ pub fn Tray::apply_translations(self : Tray, table : Map[String, String]) -> Uni
 }
 
 ///|
+/// 注册左键点击回调。参数为桌面坐标 (x, y)。
+pub fn Tray::on_click(self : Tray, f : (Int, Int) -> Unit) -> Unit {
+  self.activate_handler = f
+}
+
+///|
+/// 注册中键点击回调。参数为桌面坐标 (x, y)。
+pub fn Tray::on_middle_click(self : Tray, f : (Int, Int) -> Unit) -> Unit {
+  self.secondary_handler = f
+}
+
+///|
+/// 注册滚轮回调。参数为 (delta, orientation)，orientation 0=垂直 1=水平。
+pub fn Tray::on_scroll(self : Tray, f : (Int, Int) -> Unit) -> Unit {
+  self.scroll_handler = f
+}
+
+///|
 /// 启动托盘：注册到桌面并常驻响应请求。会阻塞。
 pub fn Tray::run(self : Tray) -> Result[Unit, Int] {
-  let conn = match @dbus.connect_bus() {
+  let tray_ref = Ref::new(self)
+  let server = match @dbus.Server::connect() {
     Err(e) => {
       return Err(e)
     }
-    Ok(c) => c
+    Ok(s) => s
   }
-  match @dbus.hello(conn) {
+  match @dbus.Server::hello(server) {
     Err(e) => {
-      @dbus.close(conn)
       return Err(e)
     }
     Ok(_) => ()
   }
   let pid = @dbus.getpid()
   let tray_name = "org.kde.StatusNotifierItem-" + pid.to_string() + "-1"
-  match @dbus.request_name(conn, tray_name, 0, 2) {
+  match @dbus.Server::request_name(server, tray_name, 0) {
     Err(e) => {
-      @dbus.close(conn)
       return Err(e)
     }
     Ok(_) => ()
   }
-  match @dbus.call_with_string(
-    conn,
+  match @dbus.Server::call_with_string(
+    server,
     "org.kde.StatusNotifierWatcher",
     "/StatusNotifierWatcher",
     "org.kde.StatusNotifierWatcher",
@@ -127,63 +155,29 @@ pub fn Tray::run(self : Tray) -> Result[Unit, Int] {
     3,
   ) {
     Err(e) => {
-      @dbus.close(conn)
       return Err(e)
     }
     Ok(_) => ()
   }
-  self.serve(conn)
-  @dbus.close(conn)
+  // 常驻服务循环：把方法调用分发给 tray（通过 Ref 捕获可变状态）
+  @dbus.Server::serve(server, fn(s, ctx) {
+    let t = tray_ref.val
+    t.handle(s, ctx)
+  })
   Ok(())
 }
 
 ///|
-/// 常驻服务循环。
-fn Tray::serve(self : Tray, conn : @dbus.Connection) -> Unit {
-  let mut serial = 100
-  let mut running = true
-  while running {
-    match @dbus.recv_message(conn) {
-      Err(_) => running = false
-      Ok(raw) => {
-        let fields = @dbus.parse_header_fields(raw)
-        match @dbus.parse_message(raw) {
-          None => ()
-          Some(m) =>
-            if m.msg_type.to_int() == 1 {
-              serial = serial + 1
-              self.handle(conn, m, fields, serial)
-            }
-        }
-      }
-    }
-  }
-}
-
-///|
-/// 处理一个来自桌面的方法调用。
+/// 处理一个来自桌面的方法调用。返回要回复的内容（None 则不回）。
 fn Tray::handle(
   self : Tray,
-  conn : @dbus.Connection,
-  m : @dbus.Message,
-  fields : @dbus.HeaderFields,
-  serial : Int,
-) -> Unit {
-  // 回复必须指定 destination = 请求方，否则总线无法路由
-  let dest = match fields.sender {
-    Some(s) => s
-    None => ""
-  }
-  let iface = match fields.interface {
-    Some(s) => s
-    None => ""
-  }
-  let name = match fields.member {
-    Some(s) => s
-    None => ""
-  }
+  server : @dbus.Server,
+  ctx : @dbus.DispatchCtx,
+) -> @dbus.Reply? {
+  let iface = ctx.iface
+  let name = ctx.member
   if iface == "org.freedesktop.DBus.Properties" && name == "Get" {
-    let prop = read_second_string(m.body)
+    let prop = read_second_string(ctx.body)
     let value = if prop == "Menu" {
       let e = @dbus.Encoder::new()
       e.variant_object_path(MENU_PATH)
@@ -191,54 +185,57 @@ fn Tray::handle(
     } else {
       @dbus.build_variant_string(self.property(prop))
     }
-    reply(conn, dest, m.serial, value, "v", serial)
+    Some({ body: value, signature: "v" })
   } else if iface == "org.freedesktop.DBus.Properties" && name == "GetAll" {
-    reply(conn, dest, m.serial, self.all_properties(), "a{sv}", serial)
+    Some({ body: self.all_properties(), signature: "a{sv}" })
   } else if iface == "com.canonical.dbusmenu" && name == "GetLayout" {
-    // 入参 (parentID, recursionDepth, propertyNames)。前 8 字节是 i32 + i32。
-    let parent_id = read_i32_at(m.body, 0)
-    let depth = read_i32_at(m.body, 4)
+    let parent_id = read_i32_at(ctx.body, 0)
+    let depth = read_i32_at(ctx.body, 4)
     let layout = @dbusmenu.encode_layout(self.menu, self.revision, parent_id, depth)
-    reply(conn, dest, m.serial, layout, "u(ia{sv}av)", serial)
+    Some({ body: layout, signature: "u(ia{sv}av)" })
   } else if iface == "com.canonical.dbusmenu" && name == "AboutToShow" {
-    reply(conn, dest, m.serial, @dbusmenu.encode_bool(false), "b", serial)
+    Some({ body: @dbusmenu.encode_bool(false), signature: "b" })
   } else if iface == "com.canonical.dbusmenu" && name == "Event" {
-    let (id, ev) = @dbusmenu.parse_event(m.body)
+    let (id, ev) = @dbusmenu.parse_event(ctx.body)
     if ev == "clicked" {
       let _ = self.menu.dispatch(id)
     }
-    let empty : Bytes = Bytes::makei(0, fn(_) { 0 })
-    reply(conn, dest, m.serial, empty, "", serial)
     // handler 里若改了菜单，通知桌面重新拉取布局
     if self.menu.is_dirty() {
       self.revision = self.revision + 1
       let body = @dbus.build_body_uu(self.revision, 0)
-      let _ = @dbus.emit_signal(
-        conn, MENU_PATH, "com.canonical.dbusmenu", "LayoutUpdated",
-        body, "ui", serial + 1,
+      let _ = @dbus.Server::emit_signal(
+        server, MENU_PATH, "com.canonical.dbusmenu", "LayoutUpdated",
+        body, "ui",
       )
       self.menu.clear_dirty()
     }
+    None   // 菜单事件不需要回复
+  } else if iface == "org.kde.StatusNotifierItem" && name == "Activate" {
+    // 左键点击：body 是 (i32 x, i32 y)
+    let (x, y) = read_xy(ctx.body)
+    let h = self.activate_handler
+    h(x, y)
+    Some({ body: Bytes::makei(0, fn(_) { 0 }), signature: "" })
+  } else if iface == "org.kde.StatusNotifierItem" && name == "SecondaryActivate" {
+    let (x, y) = read_xy(ctx.body)
+    let h = self.secondary_handler
+    h(x, y)
+    Some({ body: Bytes::makei(0, fn(_) { 0 }), signature: "" })
+  } else if iface == "org.kde.StatusNotifierItem" && name == "Scroll" {
+    // body 是 (i32 delta, i32 orientation)
+    let delta = read_i32_at(ctx.body, 0)
+    let orientation = read_i32_at(ctx.body, 4)
+    let h = self.scroll_handler
+    h(delta, orientation)
+    Some({ body: Bytes::makei(0, fn(_) { 0 }), signature: "" })
   } else {
-    let empty : Bytes = Bytes::makei(0, fn(_) { 0 })
-    reply(conn, dest, m.serial, empty, "", serial)
+    None
   }
 }
 
 ///|
 /// 发一条 METHOD_RETURN。
-fn reply(
-  conn : @dbus.Connection,
-  dest : String,
-  reply_serial : Int,
-  body : Bytes,
-  signature : String,
-  serial : Int,
-) -> Unit {
-  let msg = @dbus.build_method_return(dest, reply_serial, body, signature, serial)
-  let _ = @dbus.send_raw(conn, msg)
-}
-
 ///|
 /// 编码全部 SNI 属性为 a{sv}。
 ///
@@ -326,6 +323,12 @@ fn read_i32_at(body : Bytes, off : Int) -> Int {
   } else {
     u
   }
+}
+
+///|
+/// 读两个 i32（SNI Activate/SecondaryActivate 的桌面坐标 x,y）。
+fn read_xy(body : Bytes) -> (Int, Int) {
+  (read_i32_at(body, 0), read_i32_at(body, 4))
 }
 
 ///|
