@@ -1,0 +1,6 @@
+import {
+  "clyzhi/moonbit-dbus/src" @dbus,
+  "moonbitlang/core/encoding/utf8" @utf8,
+  "moonbitlang/async/fs" @fs,
+}
+supported_targets = "+native"
