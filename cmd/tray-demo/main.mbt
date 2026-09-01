@@ -5,9 +5,7 @@
 /// 点「Language / 语言」子菜单里的选项，运行时整体切换语言，不用重建菜单。
 fn main {
   let cfg = @tray.default_tray_config(
-    "moonbit-i18n-demo",
-    "MoonBit i18n Demo",
-    "applications-system",
+    "moonbit-i18n-demo", "MoonBit i18n Demo", "applications-system",
   )
   let t = @tray.tray(cfg)
 
@@ -46,17 +44,13 @@ fn main {
     item.set_title(item.key() + " · done")
   })
   |> ignore
-  t.on("menu.open", en["menu.open"], fn(_item) {  })
-  |> ignore
-  t.on("menu.save", en["menu.save"], fn(_item) {  })
-  |> ignore
+  t.on("menu.open", en["menu.open"], fn(_item) {  }) |> ignore
+  t.on("menu.save", en["menu.save"], fn(_item) {  }) |> ignore
 
   t.separator()
 
-  t.on("menu.undo", en["menu.undo"], fn(_item) {  })
-  |> ignore
-  t.on("menu.redo", en["menu.redo"], fn(_item) {  })
-  |> ignore
+  t.on("menu.undo", en["menu.undo"], fn(_item) {  }) |> ignore
+  t.on("menu.redo", en["menu.redo"], fn(_item) {  }) |> ignore
 
   t.separator()
 
@@ -89,17 +83,17 @@ fn main {
   t.apply_translations(en)
 
   // —— 左键 / 中键 / 滚轮事件（SNI Activate / SecondaryActivate / Scroll）——
-  t.on_click(fn(x, y) {
-    println("left-click at (\{x}, \{y})")
-  })
-  t.on_middle_click(fn(x, y) {
-    println("middle-click at (\{x}, \{y})")
-  })
+  t.on_click(fn(x, y) { println("left-click at (\{x}, \{y})") })
+  t.on_middle_click(fn(x, y) { println("middle-click at (\{x}, \{y})") })
   t.on_scroll(fn(delta, orientation) {
     let dir = if delta > 0 { "up" } else { "down" }
     let axis = if orientation == 0 { "vertical" } else { "horizontal" }
     println("scroll \{dir} (delta=\{delta}, \{axis})")
   })
+
+  // 图标用 freedesktop 主题图标名（applications-system），保持托盘稳定运行。
+  // PixelIcon / set_icon（IconPixmap）是实验性 API：D-Bus 编码尚未通过 KDE 验证，
+  // 演示中不使用，避免图标编码问题导致托盘断连。
 
   println("i18n tray start")
   match t.run() {

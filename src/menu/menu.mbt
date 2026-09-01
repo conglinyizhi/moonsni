@@ -8,10 +8,10 @@
 ///|
 /// 菜单项类型。变体通过 `pub(all)` 暴露，供 dbusmenu 子包跨包匹配。
 pub(all) enum NodeKind {
-  Action      // 普通可点项
-  Separator   // 分割线
-  Checkbox    // 复选框
-  Submenu     // 子菜单容器
+  Action // 普通可点项
+  Separator // 分割线
+  Checkbox // 复选框
+  Submenu // 子菜单容器
 } derive(Eq)
 
 ///|
@@ -22,9 +22,9 @@ pub struct MenuNode {
   mut title : String
   mut enabled : Bool
   mut visible : Bool
-  mut checked : Bool                     // 仅 Checkbox 有意义
+  mut checked : Bool // 仅 Checkbox 有意义
   kind : NodeKind
-  children : Array[MenuNode]             // 子菜单的子项
+  children : Array[MenuNode] // 子菜单的子项
   handler : (ItemHandle) -> Unit
 }
 
@@ -91,15 +91,15 @@ pub fn ItemHandle::key(self : ItemHandle) -> String {
 ///|
 /// 一棵菜单。
 pub struct Menu {
-  items : Array[MenuNode]   // 顶层菜单项
-  mut next_id : Int         // dbusmenu id 分配器（0 是根节点）
-  mut dirty : Bool          // 有改动，需要通知桌面
+  items : Array[MenuNode] // 顶层菜单项
+  mut next_id : Int // dbusmenu id 分配器（0 是根节点）
+  mut dirty : Bool // 有改动，需要通知桌面
 }
 
 ///|
 /// 新建空菜单。
 pub fn Menu::new() -> Menu {
-  { items: [], next_id: 1, dirty: false }
+  { items: [], next_id: 1, dirty: false, }
 }
 
 ///|
@@ -147,7 +147,7 @@ pub fn Menu::on(
   let n = make_node(self, key, title, Action, false, handler)
   self.items.push(n)
   self.dirty = true
-  { node: n, menu: self }
+  { node: n, menu: self, }
 }
 
 ///|
@@ -170,7 +170,7 @@ pub fn Menu::checkbox(
   let n = make_node(self, key, title, Checkbox, checked, handler)
   self.items.push(n)
   self.dirty = true
-  { node: n, menu: self }
+  { node: n, menu: self, }
 }
 
 ///|
@@ -179,7 +179,7 @@ pub fn Menu::submenu(self : Menu, key : String, title : String) -> SubMenu {
   let n = make_node(self, key, title, Submenu, false, fn(_x) {  })
   self.items.push(n)
   self.dirty = true
-  { menu: self, node: n }
+  { menu: self, node: n, }
 }
 
 // —— 子菜单 API（与顶层镜像，可无限嵌套）——
@@ -195,7 +195,7 @@ pub fn SubMenu::on(
   let n = make_node(self.menu, key, title, Action, false, handler)
   self.node.children.push(n)
   self.menu.dirty = true
-  { node: n, menu: self.menu }
+  { node: n, menu: self.menu, }
 }
 
 ///|
@@ -218,22 +218,26 @@ pub fn SubMenu::checkbox(
   let n = make_node(self.menu, key, title, Checkbox, checked, handler)
   self.node.children.push(n)
   self.menu.dirty = true
-  { node: n, menu: self.menu }
+  { node: n, menu: self.menu, }
 }
 
 ///|
 /// 在子菜单里再开一层子菜单（可继续无限嵌套）。
-pub fn SubMenu::submenu(self : SubMenu, key : String, title : String) -> SubMenu {
+pub fn SubMenu::submenu(
+  self : SubMenu,
+  key : String,
+  title : String,
+) -> SubMenu {
   let n = make_node(self.menu, key, title, Submenu, false, fn(_x) {  })
   self.node.children.push(n)
   self.menu.dirty = true
-  { menu: self.menu, node: n }
+  { menu: self.menu, node: n, }
 }
 
 ///|
 /// 子菜单自身的句柄（可改它的标题等）。
 pub fn SubMenu::handle(self : SubMenu) -> ItemHandle {
-  { node: self.node, menu: self.menu }
+  { node: self.node, menu: self.menu, }
 }
 
 // —— 路由 / 查找 ——
@@ -266,7 +270,7 @@ pub fn Menu::dispatch(self : Menu, id : Int) -> Bool {
       if n.kind == Separator {
         return false
       }
-      let h : ItemHandle = { node: n, menu: self }
+      let h : ItemHandle = { node: n, menu: self, }
       if n.kind == Checkbox {
         n.checked = not(n.checked)
         self.dirty = true
@@ -281,11 +285,12 @@ pub fn Menu::dispatch(self : Menu, id : Int) -> Bool {
 /// 按 key 递归取句柄。
 pub fn Menu::get(self : Menu, key : String) -> ItemHandle? {
   match find_by_key(self.items, key) {
-    Some(n) => Some({ node: n, menu: self })
+    Some(n) => Some({ node: n, menu: self, })
     None => None
   }
 }
 
+///|
 fn find_by_key(items : Array[MenuNode], key : String) -> MenuNode? {
   let mut i = 0
   while i < items.length() {
@@ -324,11 +329,15 @@ pub fn Menu::clear_dirty(self : Menu) -> Unit {
 /// 按 key 递归应用翻译表：把菜单里每个项的标题换成翻译表中的值。
 /// 用于运行时切换语言（i18n）。
 /// key 在翻译表中找不到时保留原标题。
-pub fn Menu::apply_translations(self : Menu, table : Map[String, String]) -> Unit {
+pub fn Menu::apply_translations(
+  self : Menu,
+  table : Map[String, String],
+) -> Unit {
   apply_to_items(self.items, table)
   self.dirty = true
 }
 
+///|
 fn apply_to_items(items : Array[MenuNode], table : Map[String, String]) -> Unit {
   let mut i = 0
   while i < items.length() {

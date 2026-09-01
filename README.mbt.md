@@ -64,9 +64,9 @@ handle back that lets you change that item at any time.
 ///|
 test "quick start — build a tray and register menu items" {
   let cfg = @tray.default_tray_config(
-    "my-app",              // Id
-    "My Application",      // Title
-    "applications-system", // IconName
+    "my-app", // Id
+     "My Application", // Title
+     "applications-system", // IconName
   )
   let t = @tray.tray(cfg)
 
@@ -90,9 +90,11 @@ the argument passed to the handler:
 ```mbt check
 ///|
 test "handle is live and updatable" {
-  let t = @tray.tray(@tray.default_tray_config("app", "App", "applications-system"))
+  let t = @tray.tray(
+    @tray.default_tray_config("app", "App", "applications-system"),
+  )
   let hello = t.on("hello", "Hello", fn(item) { item.set_title("Clicked") })
-  hello.set_title("New title")    // from anywhere
+  hello.set_title("New title") // from anywhere
   hello.set_enabled(false)
   hello.set_visible(true)
 
@@ -111,24 +113,27 @@ any depth:
 ```mbt check
 ///|
 test "menu building blocks" {
-  let t = @tray.tray(@tray.default_tray_config("app", "App", "applications-system"))
+  let t = @tray.tray(
+    @tray.default_tray_config("app", "App", "applications-system"),
+  )
 
   t.on("hello", "Hello", fn(_item) {  }) |> ignore
-  t.separator()                                        // divider
+  t.separator() // divider
 
-  t.checkbox("dark", "Dark mode", false, fn(item) {    // checkbox
+  t.checkbox("dark", "Dark mode", false, fn(item) { // checkbox
     // checked is already toggled; item.checked() reflects it
     let _toggled = item.checked()
-  }) |> ignore
+  })
+  |> ignore
 
-  let tools = t.submenu("tools", "Tools")              // submenu -> builder
+  let tools = t.submenu("tools", "Tools") // submenu -> builder
   let _tool0 = tools.on("tool-0", "Tool #0", fn(_item) {  })
   tools.separator()
 
   let advanced = tools.submenu("advanced", "Advanced") // nested submenu
   let _adv0 = advanced.on("adv-0", "Advanced #0", fn(_item) {  })
 
-  let deeper = advanced.submenu("deeper", "Even deeper")  // grandchild
+  let deeper = advanced.submenu("deeper", "Even deeper") // grandchild
   let _bottom = deeper.on("bottom", "You found the bottom", fn(_item) {  })
 }
 ```
@@ -151,12 +156,17 @@ at runtime — without rebuilding the menu:
 ```mbt check
 ///|
 test "runtime i18n" {
-  let t = @tray.tray(@tray.default_tray_config("app", "App", "applications-system"))
+  let t = @tray.tray(
+    @tray.default_tray_config("app", "App", "applications-system"),
+  )
   t.on("menu.file", "File", fn(_item) {  }) |> ignore
   t.on("menu.new", "New document", fn(_item) {  }) |> ignore
 
   // 初始英文
-  let en : Map[String, String] = { "menu.file": "File", "menu.new": "New document" }
+  let en : Map[String, String] = {
+    "menu.file": "File",
+    "menu.new": "New document",
+  }
   t.apply_translations(en)
   match t.item("menu.file") {
     Some(it) => assert_eq(it.title(), "File")
@@ -164,7 +174,10 @@ test "runtime i18n" {
   }
 
   // 运行时切中文
-  let zh : Map[String, String] = { "menu.file": "文件", "menu.new": "新建文档" }
+  let zh : Map[String, String] = {
+    "menu.file": "文件",
+    "menu.new": "新建文档",
+  }
   t.apply_translations(zh)
   match t.item("menu.file") {
     Some(it) => assert_eq(it.title(), "文件")
@@ -196,12 +209,14 @@ real work elsewhere.
 ```mbt check
 ///|
 test "pointer & scroll events" {
-  let t = @tray.tray(@tray.default_tray_config("app", "App", "applications-system"))
+  let t = @tray.tray(
+    @tray.default_tray_config("app", "App", "applications-system"),
+  )
 
-  t.on_click(fn(x, y) { let _ = (x, y) })         // left-click  Activate
-  t.on_middle_click(fn(x, y) { let _ = (x, y) })  // middle-click SecondaryActivate
-  t.on_scroll(fn(delta, orientation) {            // wheel Scroll
-    let _ = (delta, orientation)                  // orientation 0=vertical 1=horizontal
+  t.on_click(fn(x, y) { let _ = (x, y) }) // left-click  Activate
+  t.on_middle_click(fn(x, y) { let _ = (x, y) }) // middle-click SecondaryActivate
+  t.on_scroll(fn(delta, orientation) { // wheel Scroll
+    let _ = (delta, orientation) // orientation 0=vertical 1=horizontal
   })
 }
 ```
@@ -214,7 +229,9 @@ test "pointer & scroll events" {
 ///|
 test "pure menu model, no D-Bus" {
   let m = @menu.Menu::new()
-  let h = m.on("qr", "识别二维码", fn(item) { item.set_title("识别中…") })
+  let h = m.on("qr", "识别二维码", fn(item) {
+    item.set_title("识别中…")
+  })
   h.set_title("扫描中…")
 
   match m.get("qr") {
@@ -233,7 +250,7 @@ test "pure menu model, no D-Bus" {
 test "dbusmenu codec is pure" {
   let m = @menu.Menu::new()
   m.on("a", "A", fn(_item) {  }) |> ignore
-  let bytes = @dbusmenu.encode_layout(m, 1, 0, -1)   // whole tree
+  let bytes = @dbusmenu.encode_layout(m, 1, 0, -1) // whole tree
   assert_true(bytes.length() > 0)
 }
 ```
@@ -251,7 +268,7 @@ fn main {
   )
   let t = @tray.tray(cfg)
   t.on("hello", "Hello", fn(item) { item.set_title("Clicked") }) |> ignore
-  t.run()   // blocks; serves the tray until killed
+  t.run() // blocks; serves the tray until killed
 }
 ```
 
@@ -391,15 +408,24 @@ Works today:
 - Serving `Get` / `GetAll` for all properties above
 - Right-click context menu with click routing and live title updates
 - Left / middle / scroll events (`Activate`, `SecondaryActivate`, `Scroll`)
+- `NewIcon` / `LayoutUpdated` signals
 - Submenus of arbitrary depth
 - Runtime i18n switching (verified: whole menu switches language live)
 - Verified on KDE Plasma 6 (Wayland)
 
+Experimental (API ready, wire codec not yet verified):
+
+- `PixelIcon` / `set_icon` / `set_icons` / `set_icon_unchecked` / `clear_pixmap`
+  — dynamic tray icon via `IconPixmap` (`a(iiibay)`). The API and the input
+  validation (size / ARGB length / over-large guard) are in place and unit
+  tested, **but the D-Bus encoding is not yet verified against KDE** (serving
+  the property can make the desktop drop the connection). Stick to `IconName`
+  for now.
+
 Not implemented yet:
 
 - Radio groups / toggle-only-radio behavior
-- `IconPixmap` (raw pixel icons), `ToolTip`, `AttentionIconName`
-- `NewIcon` / `NewStatus` signals
+- `ToolTip`, `AttentionIconName`
 - Removing menu items after registration
 
 ## Roadmap

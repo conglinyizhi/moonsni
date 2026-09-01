@@ -9,9 +9,9 @@
 ///|
 test "quick start tray" {
   let cfg = @tray.default_tray_config(
-    "my-app",              // Id
-    "My Application",      // Title
-    "applications-system", // IconName from the freedesktop icon theme
+    "my-app", // Id
+     "My Application", // Title
+     "applications-system", // IconName from the freedesktop icon theme
   )
   let t = @tray.tray(cfg)
 
@@ -28,9 +28,11 @@ test "quick start tray" {
 ```mbt check
 ///|
 test "handle is live and updatable" {
-  let t = @tray.tray(@tray.default_tray_config("app", "App", "applications-system"))
+  let t = @tray.tray(
+    @tray.default_tray_config("app", "App", "applications-system"),
+  )
   let hello = t.on("hello", "Hello", fn(item) { item.set_title("Clicked") })
-  hello.set_title("New title")   // 从别处也能改
+  hello.set_title("New title") // 从别处也能改
   hello.set_enabled(false)
   hello.set_visible(true)
   let found = t.item("hello")
@@ -47,14 +49,17 @@ test "handle is live and updatable" {
 ```mbt check
 ///|
 test "menu building blocks" {
-  let t = @tray.tray(@tray.default_tray_config("app", "App", "applications-system"))
+  let t = @tray.tray(
+    @tray.default_tray_config("app", "App", "applications-system"),
+  )
 
   t.on("hello", "Hello", fn(_item) {  }) |> ignore
   t.separator()
   t.checkbox("dark", "Dark mode", false, fn(item) {
     // checked 已翻转，item.checked() 反映真实状态
     let _ = item.checked()
-  }) |> ignore
+  })
+  |> ignore
 
   // 子菜单（可无限嵌套）
   let tools = t.submenu("tools", "Tools")
@@ -71,16 +76,24 @@ test "menu building blocks" {
 ```mbt check
 ///|
 test "runtime i18n" {
-  let t = @tray.tray(@tray.default_tray_config("app", "App", "applications-system"))
+  let t = @tray.tray(
+    @tray.default_tray_config("app", "App", "applications-system"),
+  )
   t.on("menu.file", "File", fn(_item) {  }) |> ignore
   t.submenu("menu.language", "Language") |> ignore
 
   // 初始英文
-  let en : Map[String, String] = { "menu.file": "File", "menu.language": "Language" }
+  let en : Map[String, String] = {
+    "menu.file": "File",
+    "menu.language": "Language",
+  }
   t.apply_translations(en)
 
   // 运行时切中文
-  let zh : Map[String, String] = { "menu.file": "文件", "menu.language": "语言" }
+  let zh : Map[String, String] = {
+    "menu.file": "文件",
+    "menu.language": "语言",
+  }
   t.apply_translations(zh)
 
   let _found = t.item("menu.file")
@@ -92,11 +105,13 @@ test "runtime i18n" {
 ```mbt check
 ///|
 test "pointer & scroll events" {
-  let t = @tray.tray(@tray.default_tray_config("app", "App", "applications-system"))
+  let t = @tray.tray(
+    @tray.default_tray_config("app", "App", "applications-system"),
+  )
 
-  t.on_click(fn(x, y) { let _ = (x, y) })         // 左键 Activate
-  t.on_middle_click(fn(x, y) { let _ = (x, y) })  // 中键 SecondaryActivate
-  t.on_scroll(fn(delta, orientation) {            // 滚轮 Scroll
+  t.on_click(fn(x, y) { let _ = (x, y) }) // 左键 Activate
+  t.on_middle_click(fn(x, y) { let _ = (x, y) }) // 中键 SecondaryActivate
+  t.on_scroll(fn(delta, orientation) { // 滚轮 Scroll
     let _ = (delta, orientation)
   })
 }
@@ -110,7 +125,9 @@ test "pointer & scroll events" {
 ///|
 test "pure menu model, no D-Bus" {
   let m = @menu.Menu::new()
-  let h = m.on("qr", "识别二维码", fn(item) { item.set_title("识别中…") })
+  let h = m.on("qr", "识别二维码", fn(item) {
+    item.set_title("识别中…")
+  })
   h.set_title("扫描中…")
   let found = m.get("qr")
   if found is Some(it) {

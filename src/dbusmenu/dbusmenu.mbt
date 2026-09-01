@@ -13,14 +13,20 @@
 ///  - parentID = 0  返回整棵菜单（根节点，含全部嵌套子项）
 ///  - parentID = 非 0  返回「该节点自身」作为根（KDE 对子菜单项单独取这一层时用）
 ///  - recursionDepth = -1 不限深度；0 只当前层；>0 为剩余层数
-pub fn encode_layout(menu : @menu.Menu, revision : Int, parent_id : Int, depth : Int) -> Bytes {
+pub fn encode_layout(
+  menu : @menu.Menu,
+  revision : Int,
+  parent_id : Int,
+  depth : Int,
+) -> Bytes {
   let enc = @dbus.Encoder::new()
   enc.u32(revision)
   if parent_id == 0 {
     // 根节点：id=0，渲染所有顶层项（含嵌套子项，作为一棵完整树）
     enc.struct_with(fn(root) {
       root.i32(0)
-      root.array_with(8, fn(_props) {  // 根节点无特殊属性
+      root.array_with(8, fn(_props) {
+        // 根节点无特殊属性
       })
       root.array_with(1, fn(children) {
         let mut i = 0
@@ -33,16 +39,13 @@ pub fn encode_layout(menu : @menu.Menu, revision : Int, parent_id : Int, depth :
   } else {
     // 子菜单：返回「该节点自身」作为根（id / props / children 同一层，不包裹）
     match @menu.find_node(menu.items, parent_id) {
-      None => {
+      None =>
         enc.struct_with(fn(root) {
           root.i32(0)
-          root.array_with(8, fn(_props) { })
-          root.array_with(1, fn(_children) { })
+          root.array_with(8, fn(_props) {  })
+          root.array_with(1, fn(_children) {  })
         })
-      }
-      Some(n) => {
-        encode_struct_root(enc, n, depth)
-      }
+      Some(n) => encode_struct_root(enc, n, depth)
     }
   }
   enc.finish()
@@ -51,13 +54,15 @@ pub fn encode_layout(menu : @menu.Menu, revision : Int, parent_id : Int, depth :
 ///|
 /// 把一个节点编码成顶层的 `(ia{sv}av)` 结构体（不带 variant 签名）。
 /// 用于非根分支：KDE 单独取某个子菜单项时，期望拿到该节点自身。
-fn encode_struct_root(out : @dbus.Encoder, node : @menu.MenuNode, depth : Int) -> Unit {
+fn encode_struct_root(
+  out : @dbus.Encoder,
+  node : @menu.MenuNode,
+  depth : Int,
+) -> Unit {
   out.struct_with(fn(n) {
     n.i32(node.id)
     // 属性字典
-    n.array_with(8, fn(p) {
-      encode_props(p, node)
-    })
+    n.array_with(8, fn(p) { encode_props(p, node) })
     // 子项（递归）
     n.array_with(1, fn(kids) {
       if depth != 0 {
@@ -128,13 +133,11 @@ fn encode_props(p : @dbus.Encoder, node : @menu.MenuNode) -> Unit {
 /// depth 控制递归层数：-1 不限；0 只当前节点；>0 递减。
 /// 渲染「直接子项」当且仅当 depth != 0（与 systray copyLayout 语义一致）。
 fn encode_node(out : @dbus.Encoder, node : @menu.MenuNode, depth : Int) -> Unit {
-  out.signature("(ia{sv}av)")   // variant 的签名
+  out.signature("(ia{sv}av)") // variant 的签名
   out.struct_with(fn(n) {
     n.i32(node.id)
     // 属性字典
-    n.array_with(8, fn(p) {
-      encode_props(p, node)
-    })
+    n.array_with(8, fn(p) { encode_props(p, node) })
     // 子项（递归）。depth != 0 才渲染直接子项；传给子项时递减一层。
     n.array_with(1, fn(kids) {
       if depth != 0 {

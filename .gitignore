@@ -5,3 +5,5 @@ target
 .mooncakes/
 .moonagent/
 cmd/tray-demo/pkg.generated.mbti
+/pkg.generated.mbti
+examples/doc/pkg.generated.mbti

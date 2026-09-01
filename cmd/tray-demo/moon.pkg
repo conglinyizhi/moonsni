@@ -1,5 +1,7 @@
 import {
-  "clyzhi/moonsni/src/tray" @tray,
+  "clyzhi/moonsni/src/tray",
 }
+
 pkgtype(kind: "executable")
+
 supported_targets = "+native"
