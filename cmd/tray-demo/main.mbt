@@ -24,7 +24,7 @@ fn main {
     "menu.zh": "中文",
     "menu.en": "English",
     "menu.about": "关于本演示",
-    "menu.about.text": "用 moonbit-dbus + moonbit-sni 构建",
+    "menu.about.text": "用 moondbus + moonsni 构建",
   }
   let en : Map[String, String] = {
     "menu.file": "File",
@@ -38,7 +38,7 @@ fn main {
     "menu.zh": "中文",
     "menu.en": "English",
     "menu.about": "About this demo",
-    "menu.about.text": "Built with moonbit-dbus + moonbit-sni",
+    "menu.about.text": "Built with moondbus + moonsni",
   }
 
   // —— 注册菜单：扁平，语言切到顶层好找 ——

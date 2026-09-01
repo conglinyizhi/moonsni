@@ -1,8 +1,8 @@
 // Generated using `moon info`, DON'T EDIT IT
-package "clyzhi/moonbit-sni/src/tray"
+package "clyzhi/moonsni/src/tray"
 
 import {
-  "clyzhi/moonbit-sni/src/menu",
+  "clyzhi/moonsni/src/menu",
 }
 
 // Values

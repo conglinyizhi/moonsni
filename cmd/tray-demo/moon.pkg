@@ -1,5 +1,5 @@
 import {
-  "clyzhi/moonbit-sni/src/tray" @tray,
+  "clyzhi/moonsni/src/tray" @tray,
 }
 pkgtype(kind: "executable")
 supported_targets = "+native"

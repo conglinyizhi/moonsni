@@ -1,22 +1,22 @@
-# moonbit-sni
+# moonsni
 
 **System tray icons for MoonBit on Linux** — a pure MoonBit implementation of the
 freedesktop [StatusNotifierItem](https://www.freedesktop.org/wiki/Specifications/StatusNotifierItem/)
-(SNI) specification, built on [moonbit-dbus](https://github.com/conglinyizhi/moonbit-dbus).
+(SNI) specification, built on [moondbus](https://github.com/conglinyizhi/moondbus).
 
 No `libappindicator`, no Qt, no GTK. The D-Bus protocol and the SNI service are
 both written in MoonBit.
 
 ## Progressive by design
 
-`moonbit-sni` is not a framework you have to adopt wholesale. It is built as
+`moonsni` is not a framework you have to adopt wholesale. It is built as
 **three independent packages**, so you take only what you need:
 
 | Package | What it gives you | Depends on |
 |---|---|---|
-| `moonbit-sni/src/menu` | Pure menu **data model** — `Menu`, `ItemHandle`, `SubMenu`, checkboxes, i18n. No D-Bus at all. | nothing |
-| `moonbit-sni/src/dbusmenu` | Pure `com.canonical.dbusmenu` **wire codec** — encode a menu tree, parse events. | `menu` + moonbit-dbus encoder |
-| `moonbit-sni/src/tray` | The full **tray** — connect to the bus, register the item, serve requests. | `menu` + `dbusmenu` + moonbit-dbus |
+| `moonsni/src/menu` | Pure menu **data model** — `Menu`, `ItemHandle`, `SubMenu`, checkboxes, i18n. No D-Bus at all. | nothing |
+| `moonsni/src/dbusmenu` | Pure `com.canonical.dbusmenu` **wire codec** — encode a menu tree, parse events. | `menu` + moondbus encoder |
+| `moonsni/src/tray` | The full **tray** — connect to the bus, register the item, serve requests. | `menu` + `dbusmenu` + moondbus |
 
 This mirrors Vue's spectrum: use the whole thing for a quick tray, or drop down
 a level and use just the menu model, or swap in your own wire layer entirely.
@@ -30,14 +30,14 @@ a level and use just the menu model, or swap in your own wire layer entirely.
 ## Install
 
 ```
-moon add clyzhi/moonbit-sni
+moon add clyzhi/moonsni
 ```
 
 For the full tray:
 
 ```
 import {
-  "clyzhi/moonbit-sni/src/tray" @tray,
+  "clyzhi/moonsni/src/tray" @tray,
 }
 supported_targets = "+native"
 ```
@@ -46,7 +46,7 @@ For just the menu model (no D-Bus dependency pulled in):
 
 ```
 import {
-  "clyzhi/moonbit-sni/src/menu" @menu,
+  "clyzhi/moonsni/src/menu" @menu,
 }
 ```
 
@@ -174,7 +174,7 @@ t.on("scan", "Scan document", fn(item) {
 
 ```
 run_tray()
-  ├─ connect to the session bus + SASL auth        (moonbit-dbus)
+  ├─ connect to the session bus + SASL auth        (moondbus)
   ├─ Hello handshake
   ├─ RequestName  org.kde.StatusNotifierItem-<pid>-1
   ├─ RegisterStatusNotifierItem  → status notifier watcher
@@ -284,7 +284,7 @@ busctl --user call org.kde.StatusNotifierItem-<pid>-1 \
 
 ```
 moon build --target native
-./_build/native/debug/build/clyzhi/moonbit-sni/cmd/tray-demo/tray-demo.exe
+./_build/native/debug/build/clyzhi/moonsni/cmd/tray-demo/tray-demo.exe
 ```
 
 ## Status & limitations
