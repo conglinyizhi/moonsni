@@ -213,7 +213,7 @@ pub fn Tray::pixmap_count(self : Tray) -> Int {
 ///|
 /// 启动托盘：注册到桌面并常驻响应请求。会阻塞。
 pub fn Tray::run(self : Tray) -> Result[Unit, Int] {
-  let tray_ref = Ref::new(self)
+  let tray_ref = Ref(self)
   let server = match @dbus.Server::connect() {
     Err(e) => return Err(e)
     Ok(s) => s

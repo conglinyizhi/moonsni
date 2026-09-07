@@ -29,6 +29,9 @@ pub(all) enum NodeKind {
 } derive(Eq)
 
 ///|
+pub extend NodeKind with Eq::{not_equal, equal}
+
+///|
 /// 菜单树上的一个节点。
 pub struct MenuNode {
   id : Int
@@ -80,7 +83,7 @@ pub fn ItemHandle::set_checked(self : ItemHandle, checked : Bool) -> Unit {
 ///|
 /// 切换勾选状态。
 pub fn ItemHandle::toggle(self : ItemHandle) -> Unit {
-  self.node.checked = not(self.node.checked)
+  self.node.checked = !self.node.checked
   self.menu.dirty = true
 }
 
@@ -286,7 +289,7 @@ pub fn Menu::dispatch(self : Menu, id : Int) -> Bool {
       }
       let h : ItemHandle = { node: n, menu: self, }
       if n.kind == Checkbox {
-        n.checked = not(n.checked)
+        n.checked = !n.checked
         self.dirty = true
       }
       (n.handler)(h)

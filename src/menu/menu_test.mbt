@@ -47,7 +47,7 @@ test "dispatch routes by id" {
 test "dispatch unknown id returns false" {
   let m = Menu::new()
   let hit = Array::make(1, "")
-  let _a = m.on("a", "A", fn(item) { hit[0] = "AHIT" })
+  let _a = m.on("a", "A", fn(_item) { hit[0] = "AHIT" })
   // id 从 1 开始，999 不存在
   let ok = m.dispatch(999)
   assert_eq(ok, false)
@@ -69,9 +69,9 @@ test "separator adds to count" {
 test "dispatch recurses into submenu" {
   let m = Menu::new()
   let hit = Array::make(1, "")
-  let top = m.on("top", "Top", fn(item) { hit[0] = "top" })
+  m.on("top", "Top", fn(_item) { hit[0] = "top" }) |> ignore
   let lang = m.submenu("lang", "Language")
-  let zh = lang.on("zh", "中文", fn(item) { hit[0] = "zh" })
+  lang.on("zh", "中文", fn(_item) { hit[0] = "zh" }) |> ignore
   // zh 是 lang 的子项，id 在第 3 个（1=top, 2=lang, 3=zh）
   let ok = m.dispatch(3)
   assert_eq(ok, true)

@@ -1,3 +1,5 @@
+warnings = "-29-35"
+
 import {
   "conglinyizhi/moonsni/src/tray",
   "conglinyizhi/moonsni/src/menu",

@@ -46,6 +46,12 @@ pub(all) enum IconError {
 } derive(Debug, Eq)
 
 ///|
+pub extend IconError with Debug::{to_repr}
+
+///|
+pub extend IconError with Eq::{not_equal, equal}
+
+///|
 /// 新建一个像素图标。不做校验（构造是纯数据）。
 pub fn PixelIcon::make(width : Int, height : Int, argb : Bytes) -> PixelIcon {
   { width, height, argb, }

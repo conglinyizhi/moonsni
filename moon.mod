@@ -1,6 +1,6 @@
 name = "conglinyizhi/moonsni"
 
-version = "0.1.0"
+version = "0.1.1"
 
 readme = "README.md"
 
@@ -15,5 +15,5 @@ description = "System tray (StatusNotifierItem) for MoonBit on Linux desktops â€
 preferred_target = "native"
 
 import {
-  "conglinyizhi/moondbus@0.1.0",
+  "conglinyizhi/moondbus@0.1.1",
 }
