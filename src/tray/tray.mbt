@@ -246,15 +246,17 @@ pub fn Tray::run(self : Tray) -> Result[Unit, Int32] {
 
 ///|
 /// 处理一个来自桌面的方法调用。返回要回复的内容（None 则不回）。
-fn Tray::handle(
+
+///|
+/// 只算回复、不碰总线，抽出来是为了能脱离 session bus 直接测。
+fn Tray::reply_for(
   self : Tray,
-  server : @dbus.Server,
-  ctx : @dbus.DispatchCtx,
+  iface : String,
+  name : String,
+  body : Bytes,
 ) -> @dbus.Reply? {
-  let iface = ctx.iface
-  let name = ctx.member
   if iface == "org.freedesktop.DBus.Properties" && name == "Get" {
-    let prop = read_second_string(ctx.body)
+    let prop = read_second_string(body)
     let value = if prop == "Menu" {
       let e = @dbus.Encoder::new()
       e.variant_object_path(MENU_PATH)
@@ -266,8 +268,8 @@ fn Tray::handle(
   } else if iface == "org.freedesktop.DBus.Properties" && name == "GetAll" {
     Some({ body: self.all_properties(), signature: "a{sv}", })
   } else if iface == "com.canonical.dbusmenu" && name == "GetLayout" {
-    let parent_id = read_i32_at(ctx.body, 0)
-    let depth = read_i32_at(ctx.body, 4)
+    let parent_id = read_i32_at(body, 0)
+    let depth = read_i32_at(body, 4)
     let layout = @dbusmenu.encode_layout(
       self.menu,
       self.revision,
@@ -278,10 +280,52 @@ fn Tray::handle(
   } else if iface == "com.canonical.dbusmenu" && name == "AboutToShow" {
     Some({ body: @dbusmenu.encode_bool(false), signature: "b", })
   } else if iface == "com.canonical.dbusmenu" && name == "Event" {
-    let (id, ev) = @dbusmenu.parse_event(ctx.body)
+    let (id, ev) = @dbusmenu.parse_event(body)
     if ev == "clicked" {
       let _ = self.menu.dispatch(id)
     }
+    // dbusmenu 的 Event 是方法调用，必须回一个空回复；
+    // 不回的话调用方（gdbus、plasmashell）会一直等直到超时。
+    Some({ body: Bytes::makei(0, fn(_) { 0 }), signature: "", })
+  } else if iface == "org.freedesktop.DBus.Introspectable" &&
+    name == "Introspect" {
+    // gdbus 在调用任何方法前会先 Introspect；不回包它会一直等到超时。
+    Some({ body: @utf8.encode(introspect_xml), signature: "s", })
+  } else if iface == "org.freedesktop.DBus.Peer" && name == "Ping" {
+    Some({ body: Bytes::makei(0, fn(_) { 0 }), signature: "", })
+  } else if iface == "org.kde.StatusNotifierItem" && name == "Activate" {
+    // 左键点击：body 是 (i32 x, i32 y)
+    let (x, y) = read_xy(body)
+    let h = self.activate_handler
+    h(x, y)
+    Some({ body: Bytes::makei(0, fn(_) { 0 }), signature: "", })
+  } else if iface == "org.kde.StatusNotifierItem" && name == "SecondaryActivate" {
+    let (x, y) = read_xy(body)
+    let h = self.secondary_handler
+    h(x, y)
+    Some({ body: Bytes::makei(0, fn(_) { 0 }), signature: "", })
+  } else if iface == "org.kde.StatusNotifierItem" && name == "Scroll" {
+    // body 是 (i32 delta, i32 orientation)
+    let delta = read_i32_at(body, 0)
+    let orientation = read_i32_at(body, 4)
+    let h = self.scroll_handler
+    h(delta, orientation)
+    Some({ body: Bytes::makei(0, fn(_) { 0 }), signature: "", })
+  } else {
+    // 未知方法也回一个空回复：DBus 规范里不回包会让调用方挂到超时。
+    Some({ body: Bytes::makei(0, fn(_) { 0 }), signature: "", })
+  }
+}
+
+///|
+/// 处理一个来自桌面的方法调用，顺带把菜单与图标的变更通知出去。
+fn Tray::handle(
+  self : Tray,
+  server : @dbus.Server,
+  ctx : @dbus.DispatchCtx,
+) -> @dbus.Reply? {
+  let reply = self.reply_for(ctx.iface, ctx.member, ctx.body)
+  if ctx.iface == "com.canonical.dbusmenu" && ctx.member == "Event" {
     // handler 里若改了菜单，通知桌面重新拉取布局
     if self.menu.is_dirty() {
       self.revision = self.revision + 1
@@ -305,28 +349,8 @@ fn Tray::handle(
       )
       self.icon_dirty = false
     }
-    None // 菜单事件不需要回复
-  } else if iface == "org.kde.StatusNotifierItem" && name == "Activate" {
-    // 左键点击：body 是 (i32 x, i32 y)
-    let (x, y) = read_xy(ctx.body)
-    let h = self.activate_handler
-    h(x, y)
-    Some({ body: Bytes::makei(0, fn(_) { 0 }), signature: "", })
-  } else if iface == "org.kde.StatusNotifierItem" && name == "SecondaryActivate" {
-    let (x, y) = read_xy(ctx.body)
-    let h = self.secondary_handler
-    h(x, y)
-    Some({ body: Bytes::makei(0, fn(_) { 0 }), signature: "", })
-  } else if iface == "org.kde.StatusNotifierItem" && name == "Scroll" {
-    // body 是 (i32 delta, i32 orientation)
-    let delta = read_i32_at(ctx.body, 0)
-    let orientation = read_i32_at(ctx.body, 4)
-    let h = self.scroll_handler
-    h(delta, orientation)
-    Some({ body: Bytes::makei(0, fn(_) { 0 }), signature: "", })
-  } else {
-    None
   }
+  reply
 }
 
 ///|
@@ -448,3 +472,26 @@ fn read_xy(body : Bytes) -> (Int32, Int32) {
 pub fn run_tray(cfg : TrayConfig) -> Result[Unit, Int32] {
   tray(cfg).run()
 }
+
+///|
+/// 最小的自省描述，够 gdbus 与 plasmashell 认出接口即可。
+let introspect_xml : String = "<node>" +
+  "<interface name=\"org.kde.StatusNotifierItem\">" +
+  "<method name=\"Activate\"><arg name=\"x\" type=\"i\" direction=\"in\"/>" +
+  "<arg name=\"y\" type=\"i\" direction=\"in\"/></method>" +
+  "<method name=\"SecondaryActivate\"><arg name=\"x\" type=\"i\" direction=\"in\"/>" +
+  "<arg name=\"y\" type=\"i\" direction=\"in\"/></method>" +
+  "<method name=\"Scroll\"><arg name=\"delta\" type=\"i\" direction=\"in\"/>" +
+  "<arg name=\"orientation\" type=\"s\" direction=\"in\"/></method>" +
+  "</interface>" +
+  "<interface name=\"com.canonical.dbusmenu\">" +
+  "<method name=\"GetLayout\"><arg name=\"parentId\" type=\"i\" direction=\"in\"/>" +
+  "<arg name=\"recursionDepth\" type=\"i\" direction=\"in\"/>" +
+  "<arg name=\"propertyNames\" type=\"as\" direction=\"in\"/></method>" +
+  "<method name=\"Event\"><arg name=\"id\" type=\"i\" direction=\"in\"/>" +
+  "<arg name=\"eventId\" type=\"s\" direction=\"in\"/></method>" +
+  "</interface>" +
+  "<interface name=\"org.freedesktop.DBus.Properties\"/>" +
+  "<interface name=\"org.freedesktop.DBus.Introspectable\">" +
+  "<method name=\"Introspect\"><arg name=\"xml\" type=\"s\" direction=\"out\"/></method>" +
+  "</interface></node>"
