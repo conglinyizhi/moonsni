@@ -34,7 +34,7 @@ pub extend NodeKind with Eq::{not_equal, equal}
 ///|
 /// 菜单树上的一个节点。
 pub struct MenuNode {
-  id : Int
+  id : Int32
   key : String
   mut title : String
   mut enabled : Bool
@@ -109,7 +109,7 @@ pub fn ItemHandle::key(self : ItemHandle) -> String {
 /// 一棵菜单。
 pub struct Menu {
   items : Array[MenuNode] // 顶层菜单项
-  mut next_id : Int // dbusmenu id 分配器（0 是根节点）
+  mut next_id : Int32 // dbusmenu id 分配器（0 是根节点）
   mut dirty : Bool // 有改动，需要通知桌面
 }
 
@@ -262,7 +262,7 @@ pub fn SubMenu::handle(self : SubMenu) -> ItemHandle {
 ///|
 /// 按 dbusmenu id 递归查找节点。
 /// 按 dbusmenu id 递归查找节点（供 dbusmenu 编解码跨包使用）。
-pub fn find_node(items : Array[MenuNode], id : Int) -> MenuNode? {
+pub fn find_node(items : Array[MenuNode], id : Int32) -> MenuNode? {
   let mut i = 0
   while i < items.length() {
     let n = items[i]
@@ -280,7 +280,7 @@ pub fn find_node(items : Array[MenuNode], id : Int) -> MenuNode? {
 
 ///|
 /// 点击事件：按 id 找到节点，复选框自动翻转，然后调用它的回调。
-pub fn Menu::dispatch(self : Menu, id : Int) -> Bool {
+pub fn Menu::dispatch(self : Menu, id : Int32) -> Bool {
   match find_node(self.items, id) {
     None => false
     Some(n) => {
@@ -326,7 +326,7 @@ fn find_by_key(items : Array[MenuNode], key : String) -> MenuNode? {
 
 ///|
 /// 顶层菜单项数量。
-pub fn Menu::len(self : Menu) -> Int {
+pub fn Menu::len(self : Menu) -> Int32 {
   self.items.length()
 }
 

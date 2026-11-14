@@ -50,12 +50,12 @@ pub fn default_tray_config(
 pub struct Tray {
   cfg : TrayConfig
   menu : @menu.Menu
-  mut revision : Int
+  mut revision : Int32
   pixmap : Array[PixelIcon] // 当前像素图标（IconPixmap）
   mut icon_dirty : Bool // 图标变了，需要发 NewIcon 信号
-  mut activate_handler : (Int, Int) -> Unit // 左键：桌面坐标 (x, y)
-  mut secondary_handler : (Int, Int) -> Unit // 中键：桌面坐标 (x, y)
-  mut scroll_handler : (Int, Int) -> Unit // 滚轮：(delta, orientation)
+  mut activate_handler : (Int32, Int32) -> Unit // 左键：桌面坐标 (x, y)
+  mut secondary_handler : (Int32, Int32) -> Unit // 中键：桌面坐标 (x, y)
+  mut scroll_handler : (Int32, Int32) -> Unit // 滚轮：(delta, orientation)
 }
 
 ///|
@@ -129,19 +129,19 @@ pub fn Tray::apply_translations(
 
 ///|
 /// 注册左键点击回调。参数为桌面坐标 (x, y)。
-pub fn Tray::on_click(self : Tray, f : (Int, Int) -> Unit) -> Unit {
+pub fn Tray::on_click(self : Tray, f : (Int32, Int32) -> Unit) -> Unit {
   self.activate_handler = f
 }
 
 ///|
 /// 注册中键点击回调。参数为桌面坐标 (x, y)。
-pub fn Tray::on_middle_click(self : Tray, f : (Int, Int) -> Unit) -> Unit {
+pub fn Tray::on_middle_click(self : Tray, f : (Int32, Int32) -> Unit) -> Unit {
   self.secondary_handler = f
 }
 
 ///|
 /// 注册滚轮回调。参数为 (delta, orientation)，orientation 0=垂直 1=水平。
-pub fn Tray::on_scroll(self : Tray, f : (Int, Int) -> Unit) -> Unit {
+pub fn Tray::on_scroll(self : Tray, f : (Int32, Int32) -> Unit) -> Unit {
   self.scroll_handler = f
 }
 
@@ -206,13 +206,13 @@ pub fn Tray::clear_pixmap(self : Tray) -> Unit {
 
 ///|
 /// 当前像素图标数量（调试 / 自检用）。
-pub fn Tray::pixmap_count(self : Tray) -> Int {
+pub fn Tray::pixmap_count(self : Tray) -> Int32 {
   self.pixmap.length()
 }
 
 ///|
 /// 启动托盘：注册到桌面并常驻响应请求。会阻塞。
-pub fn Tray::run(self : Tray) -> Result[Unit, Int] {
+pub fn Tray::run(self : Tray) -> Result[Unit, Int32] {
   let tray_ref = Ref(self)
   let server = match @dbus.Server::connect() {
     Err(e) => return Err(e)
@@ -425,7 +425,7 @@ fn read_second_string(body : Bytes) -> String {
 
 ///|
 /// 读一个 有符号 小端 i32（用于 GetLayout 的 parentID / recursionDepth）。
-fn read_i32_at(body : Bytes, off : Int) -> Int {
+fn read_i32_at(body : Bytes, off : Int32) -> Int32 {
   if off + 4 > body.length() {
     return 0
   }
@@ -439,12 +439,12 @@ fn read_i32_at(body : Bytes, off : Int) -> Int {
 
 ///|
 /// 读两个 i32（SNI Activate/SecondaryActivate 的桌面坐标 x,y）。
-fn read_xy(body : Bytes) -> (Int, Int) {
+fn read_xy(body : Bytes) -> (Int32, Int32) {
   (read_i32_at(body, 0), read_i32_at(body, 4))
 }
 
 ///|
 /// 兼容旧接口：无菜单的托盘。
-pub fn run_tray(cfg : TrayConfig) -> Result[Unit, Int] {
+pub fn run_tray(cfg : TrayConfig) -> Result[Unit, Int32] {
   tray(cfg).run()
 }

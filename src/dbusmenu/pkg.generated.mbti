@@ -8,9 +8,9 @@ import {
 // Values
 pub fn encode_bool(Bool) -> Bytes
 
-pub fn encode_layout(@menu.Menu, Int, Int, Int) -> Bytes
+pub fn encode_layout(@menu.Menu, Int32, Int32, Int32) -> Bytes
 
-pub fn parse_event(Bytes) -> (Int, String)
+pub fn parse_event(Bytes) -> (Int32, String)
 
 // Errors
 

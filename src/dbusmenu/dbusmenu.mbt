@@ -29,9 +29,9 @@
 ///  - recursionDepth = -1 不限深度；0 只当前层；>0 为剩余层数
 pub fn encode_layout(
   menu : @menu.Menu,
-  revision : Int,
-  parent_id : Int,
-  depth : Int,
+  revision : Int32,
+  parent_id : Int32,
+  depth : Int32,
 ) -> Bytes {
   let enc = @dbus.Encoder::new()
   enc.u32(revision)
@@ -71,7 +71,7 @@ pub fn encode_layout(
 fn encode_struct_root(
   out : @dbus.Encoder,
   node : @menu.MenuNode,
-  depth : Int,
+  depth : Int32,
 ) -> Unit {
   out.struct_with(fn(n) {
     n.i32(node.id)
@@ -146,7 +146,11 @@ fn encode_props(p : @dbus.Encoder, node : @menu.MenuNode) -> Unit {
 /// 递归编码一个菜单节点（作为 av 数组里的一个 variant）。
 /// depth 控制递归层数：-1 不限；0 只当前节点；>0 递减。
 /// 渲染「直接子项」当且仅当 depth != 0（与 systray copyLayout 语义一致）。
-fn encode_node(out : @dbus.Encoder, node : @menu.MenuNode, depth : Int) -> Unit {
+fn encode_node(
+  out : @dbus.Encoder,
+  node : @menu.MenuNode,
+  depth : Int32,
+) -> Unit {
   out.signature("(ia{sv}av)") // variant 的签名
   out.struct_with(fn(n) {
     n.i32(node.id)
@@ -168,7 +172,7 @@ fn encode_node(out : @dbus.Encoder, node : @menu.MenuNode, depth : Int) -> Unit 
 
 ///|
 /// 解析 Event 调用的 body：`(i s v u)` -> (id, eventId)
-pub fn parse_event(body : Bytes) -> (Int, String) {
+pub fn parse_event(body : Bytes) -> (Int32, String) {
   if body.length() < 8 {
     return (0, "")
   }

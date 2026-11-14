@@ -2,7 +2,6 @@ import {
   "conglinyizhi/moonsni/src/menu",
   "conglinyizhi/moonsni/src/dbusmenu",
   "conglinyizhi/moondbus/src" @dbus,
-  "moonbitlang/core/encoding/utf8",
 }
 
 supported_targets = "+native"

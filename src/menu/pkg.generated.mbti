@@ -2,7 +2,7 @@
 package "conglinyizhi/moonsni/src/menu"
 
 // Values
-pub fn find_node(Array[MenuNode], Int) -> MenuNode?
+pub fn find_node(Array[MenuNode], Int32) -> MenuNode?
 
 // Errors
 
@@ -22,23 +22,23 @@ pub fn ItemHandle::toggle(Self) -> Unit
 
 pub struct Menu {
   items : Array[MenuNode]
-  mut next_id : Int
+  mut next_id : Int32
   mut dirty : Bool
 }
 pub fn Menu::apply_translations(Self, Map[String, String]) -> Unit
 pub fn Menu::checkbox(Self, String, String, Bool, (ItemHandle) -> Unit) -> ItemHandle
 pub fn Menu::clear_dirty(Self) -> Unit
-pub fn Menu::dispatch(Self, Int) -> Bool
+pub fn Menu::dispatch(Self, Int32) -> Bool
 pub fn Menu::get(Self, String) -> ItemHandle?
 pub fn Menu::is_dirty(Self) -> Bool
-pub fn Menu::len(Self) -> Int
+pub fn Menu::len(Self) -> Int32
 pub fn Menu::new() -> Self
 pub fn Menu::on(Self, String, String, (ItemHandle) -> Unit) -> ItemHandle
 pub fn Menu::separator(Self) -> Unit
 pub fn Menu::submenu(Self, String, String) -> SubMenu
 
 pub struct MenuNode {
-  id : Int
+  id : Int32
   key : String
   mut title : String
   mut enabled : Bool
@@ -55,6 +55,8 @@ pub(all) enum NodeKind {
   Checkbox
   Submenu
 } derive(Eq)
+pub fn NodeKind::equal(Self, Self) -> Bool
+pub fn NodeKind::not_equal(Self, Self) -> Bool
 
 pub struct SubMenu {
   menu : Menu

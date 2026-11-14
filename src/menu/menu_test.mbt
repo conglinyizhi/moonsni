@@ -15,7 +15,7 @@
 ///|
 /// 验证句柄对象能否真正修改菜单项状态（MoonBit struct 的引用语义）。
 test "handle mutates item" {
-  let m = Menu::new()
+  let m = @menu.Menu::new()
   let h = m.on("qr", "识别二维码", fn(_item) {  })
   // 通过句柄改标题
   h.set_title("识别中…")
@@ -32,7 +32,7 @@ test "handle mutates item" {
 ///|
 /// 验证按 id 路由能调到正确的 handler。
 test "dispatch routes by id" {
-  let m = Menu::new()
+  let m = @menu.Menu::new()
   let hit = Array::make(1, "")
   let _a = m.on("a", "A", fn(item) { hit[0] = "a:" + item.title() })
   let _b = m.on("b", "B", fn(item) { hit[0] = "b:" + item.title() })
@@ -45,7 +45,7 @@ test "dispatch routes by id" {
 ///|
 /// dispatch 不存在的 id 应返回 false，不调用任何 handler。
 test "dispatch unknown id returns false" {
-  let m = Menu::new()
+  let m = @menu.Menu::new()
   let hit = Array::make(1, "")
   let _a = m.on("a", "A", fn(_item) { hit[0] = "AHIT" })
   // id 从 1 开始，999 不存在
@@ -57,7 +57,7 @@ test "dispatch unknown id returns false" {
 ///|
 /// 分隔线加入后菜单长度增加。
 test "separator adds to count" {
-  let m = Menu::new()
+  let m = @menu.Menu::new()
   m.on("a", "A", fn(_item) {  }) |> ignore
   let count_before = m.len()
   m.separator()
@@ -67,7 +67,7 @@ test "separator adds to count" {
 ///|
 /// 顶层与子菜单的 dispatch 都能路由（递归）。
 test "dispatch recurses into submenu" {
-  let m = Menu::new()
+  let m = @menu.Menu::new()
   let hit = Array::make(1, "")
   m.on("top", "Top", fn(_item) { hit[0] = "top" }) |> ignore
   let lang = m.submenu("lang", "Language")
@@ -81,7 +81,7 @@ test "dispatch recurses into submenu" {
 ///|
 /// get 找不到 key 返回 None。
 test "get unknown key returns None" {
-  let m = Menu::new()
+  let m = @menu.Menu::new()
   let _a = m.on("a", "A", fn(_item) {  })
   assert_true(m.get("nope") is None)
 }
@@ -89,7 +89,7 @@ test "get unknown key returns None" {
 ///|
 /// 复选框 dispatch 自动翻转 checked。
 test "checkbox toggles on dispatch" {
-  let m = Menu::new()
+  let m = @menu.Menu::new()
   let h = m.checkbox("dark", "Dark", false, fn(item) { let _ = item.checked() })
   assert_eq(h.checked(), false)
   // 找到 checkbox 的 id 并 dispatch
@@ -101,7 +101,7 @@ test "checkbox toggles on dispatch" {
 ///|
 /// i18n：apply_translations 递归改标题，unmapped key 保留。
 test "apply_translations recurses and leaves unmapped" {
-  let m = Menu::new()
+  let m = @menu.Menu::new()
   m.on("menu.file", "File", fn(_item) {  }) |> ignore
   m.on("menu.open", "Open", fn(_item) {  }) |> ignore
   let sub = m.submenu("menu.language", "Language")

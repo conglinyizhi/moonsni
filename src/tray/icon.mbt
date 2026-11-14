@@ -31,8 +31,8 @@
 /// 一个像素图标（SNI IconPixmap 的一项）。
 /// `argb` 是 width*height*4 字节，每像素 4 字节，顺序 A, R, G, B。
 pub struct PixelIcon {
-  width : Int
-  height : Int
+  width : Int32
+  height : Int32
   argb : Bytes
 }
 
@@ -53,7 +53,11 @@ pub extend IconError with Eq::{not_equal, equal}
 
 ///|
 /// 新建一个像素图标。不做校验（构造是纯数据）。
-pub fn PixelIcon::make(width : Int, height : Int, argb : Bytes) -> PixelIcon {
+pub fn PixelIcon::make(
+  width : Int32,
+  height : Int32,
+  argb : Bytes,
+) -> PixelIcon {
   { width, height, argb, }
 }
 

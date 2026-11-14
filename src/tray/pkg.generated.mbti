@@ -12,7 +12,7 @@ pub fn default_tray_config(String, String, String) -> TrayConfig
 
 pub fn encode_pixmap(Array[PixelIcon]) -> Bytes
 
-pub fn run_tray(TrayConfig) -> Result[Unit, Int]
+pub fn run_tray(TrayConfig) -> Result[Unit, Int32]
 
 pub fn tray(TrayConfig) -> Tray
 
@@ -25,36 +25,39 @@ pub(all) enum IconError {
   TooLarge
   LengthMismatch
 } derive(Eq, @debug.Debug)
+pub fn IconError::equal(Self, Self) -> Bool
+pub fn IconError::not_equal(Self, Self) -> Bool
+pub fn IconError::to_repr(Self) -> @debug.Repr
 
 pub struct PixelIcon {
-  width : Int
-  height : Int
+  width : Int32
+  height : Int32
   argb : Bytes
 }
 pub fn PixelIcon::encode(Self, @src.Encoder) -> Unit
-pub fn PixelIcon::make(Int, Int, Bytes) -> Self
+pub fn PixelIcon::make(Int32, Int32, Bytes) -> Self
 pub fn PixelIcon::validate(Self) -> Result[Unit, IconError]
 
 pub struct Tray {
   cfg : TrayConfig
   menu : @menu.Menu
-  mut revision : Int
+  mut revision : Int32
   pixmap : Array[PixelIcon]
   mut icon_dirty : Bool
-  mut activate_handler : (Int, Int) -> Unit
-  mut secondary_handler : (Int, Int) -> Unit
-  mut scroll_handler : (Int, Int) -> Unit
+  mut activate_handler : (Int32, Int32) -> Unit
+  mut secondary_handler : (Int32, Int32) -> Unit
+  mut scroll_handler : (Int32, Int32) -> Unit
 }
 pub fn Tray::apply_translations(Self, Map[String, String]) -> Unit
 pub fn Tray::checkbox(Self, String, String, Bool, (@menu.ItemHandle) -> Unit) -> @menu.ItemHandle
 pub fn Tray::clear_pixmap(Self) -> Unit
 pub fn Tray::item(Self, String) -> @menu.ItemHandle?
 pub fn Tray::on(Self, String, String, (@menu.ItemHandle) -> Unit) -> @menu.ItemHandle
-pub fn Tray::on_click(Self, (Int, Int) -> Unit) -> Unit
-pub fn Tray::on_middle_click(Self, (Int, Int) -> Unit) -> Unit
-pub fn Tray::on_scroll(Self, (Int, Int) -> Unit) -> Unit
-pub fn Tray::pixmap_count(Self) -> Int
-pub fn Tray::run(Self) -> Result[Unit, Int]
+pub fn Tray::on_click(Self, (Int32, Int32) -> Unit) -> Unit
+pub fn Tray::on_middle_click(Self, (Int32, Int32) -> Unit) -> Unit
+pub fn Tray::on_scroll(Self, (Int32, Int32) -> Unit) -> Unit
+pub fn Tray::pixmap_count(Self) -> Int32
+pub fn Tray::run(Self) -> Result[Unit, Int32]
 pub fn Tray::separator(Self) -> Unit
 pub fn Tray::set_icon(Self, PixelIcon) -> Result[Unit, IconError]
 pub fn Tray::set_icon_unchecked(Self, PixelIcon) -> Unit
