@@ -290,7 +290,11 @@ fn Tray::reply_for(
   } else if iface == "org.freedesktop.DBus.Introspectable" &&
     name == "Introspect" {
     // gdbus 在调用任何方法前会先 Introspect；不回包它会一直等到超时。
-    Some({ body: @utf8.encode(introspect_xml), signature: "s", })
+    // 必须走编码器：D-Bus 的 s 有长度前缀，裸 UTF-8 会被判成畸形消息，
+    // 总线会直接断开连接（表现为常驻循环莫名其妙结束）。
+    let e = @dbus.Encoder::new()
+    e.string(introspect_xml)
+    Some({ body: e.finish(), signature: "s", })
   } else if iface == "org.freedesktop.DBus.Peer" && name == "Ping" {
     Some({ body: Bytes::makei(0, fn(_) { 0 }), signature: "", })
   } else if iface == "org.kde.StatusNotifierItem" && name == "Activate" {

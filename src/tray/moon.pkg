@@ -1,5 +1,4 @@
 import {
-  "moonbitlang/core/encoding/utf8",
   "conglinyizhi/moonsni/src/menu",
   "conglinyizhi/moonsni/src/dbusmenu",
   "conglinyizhi/moondbus/src" @dbus,

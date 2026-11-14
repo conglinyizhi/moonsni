@@ -59,9 +59,17 @@ test "Introspect 返回能解析的 XML" {
     t.reply_for("org.freedesktop.DBus.Introspectable", "Introspect", empty) {
     Some(r) => {
       assert_eq(r.signature, "s")
-      let xml = @utf8.decode(r.body)
-      assert_true(xml.has_prefix("<node>"))
-      assert_true(xml.contains("com.canonical.dbusmenu"))
+      // 必须符合 D-Bus 字符串编码（长度前缀 + 内容 + NUL），不是裸 UTF-8
+      match @dbus.read_dbus_string(r.body, 0) {
+        Some(xml) => {
+          assert_true(xml.has_prefix("<node>"))
+          assert_true(xml.contains("com.canonical.dbusmenu"))
+        }
+        None => {
+          println("Introspect 的回复不是合法 D-Bus 字符串")
+          assert_true(false)
+        }
+      }
     }
     None => assert_true(false)
   }
