@@ -63,6 +63,7 @@ pub fn Tray::on_middle_click(Self, (Int32, Int32) -> Unit) -> Unit
 pub fn Tray::on_scroll(Self, (Int32, Int32) -> Unit) -> Unit
 pub fn Tray::pixmap_count(Self) -> Int32
 pub fn Tray::run(Self) -> Result[Unit, Int32]
+pub fn Tray::run_with_tick(Self, () -> Unit, Int32) -> Result[Unit, Int32]
 pub fn Tray::separator(Self) -> Unit
 pub fn Tray::set_icon(Self, PixelIcon) -> Result[Unit, IconError]
 pub fn Tray::set_icon_name(Self, String) -> Unit
