@@ -49,6 +49,10 @@ pub fn default_tray_config(
 /// 除了右键菜单，还能响应左键 / 中键（同键）点击与滚轮。
 pub struct Tray {
   cfg : TrayConfig
+  mut icon_name : String // 当前图标名，可运行时改
+  mut title : String // 当前标题，可运行时改
+  mut status : String // 当前 Status，可运行时改
+  mut props_dirty : Bool // 属性变了，需要通知桌面
   menu : @menu.Menu
   mut revision : Int32
   pixmap : Array[PixelIcon] // 当前像素图标（IconPixmap）
@@ -63,6 +67,10 @@ pub struct Tray {
 pub fn tray(cfg : TrayConfig) -> Tray {
   {
     cfg,
+    icon_name: cfg.icon_name,
+    title: cfg.title,
+    status: cfg.status,
+    props_dirty: false,
     menu: @menu.Menu::new(),
     revision: 1,
     pixmap: [],
@@ -245,7 +253,99 @@ pub fn Tray::run(self : Tray) -> Result[Unit, Int32] {
 }
 
 ///|
+/// 同 `run`，但每隔 `interval_ms` 没有消息时先调一次 `tick`。
+///
+/// 用来做「会自己变的状态」：健康检查、进度、音量之类。
+/// `tick` 里可以调 `set_icon_name` / `set_title`，循环会负责通知桌面。
+pub fn Tray::run_with_tick(
+  self : Tray,
+  tick : () -> Unit,
+  interval_ms : Int32,
+) -> Result[Unit, Int32] {
+  let tray_ref = Ref(self)
+  let server = match @dbus.Server::connect() {
+    Err(e) => return Err(e)
+    Ok(s) => s
+  }
+  match @dbus.Server::hello(server) {
+    Err(e) => return Err(e)
+    Ok(_) => ()
+  }
+  let pid = @dbus.getpid()
+  let tray_name = "org.kde.StatusNotifierItem-" + pid.to_string() + "-1"
+  match @dbus.Server::request_name(server, tray_name, 0) {
+    Err(e) => return Err(e)
+    Ok(_) => ()
+  }
+  match
+    @dbus.Server::call_with_string(
+      server, "org.kde.StatusNotifierWatcher", "/StatusNotifierWatcher", "org.kde.StatusNotifierWatcher",
+      "RegisterStatusNotifierItem", tray_name, 3,
+    ) {
+    Err(e) => return Err(e)
+    Ok(_) => ()
+  }
+  @dbus.Server::serve_with_tick(
+    server,
+    fn(s, ctx) {
+      let t = tray_ref.val
+      t.handle(s, ctx)
+    },
+    fn(s) {
+      tick()
+      // tick 里可能改了图标或标题，顺手通知桌面
+      tray_ref.val.flush_props(s)
+    },
+    interval_ms,
+  )
+  Ok(())
+}
+
+///|
 /// 处理一个来自桌面的方法调用。返回要回复的内容（None 则不回）。
+
+///|
+/// 换图标名（freedesktop 主题里的名字）。下一次事件循环会通知桌面刷新。
+pub fn Tray::set_icon_name(self : Tray, name : String) -> Unit {
+  if self.icon_name != name {
+    self.icon_name = name
+    self.props_dirty = true
+  }
+}
+
+///|
+/// 换标题（悬停时显示的那行）。
+pub fn Tray::set_title(self : Tray, title : String) -> Unit {
+  if self.title != title {
+    self.title = title
+    self.props_dirty = true
+  }
+}
+
+///|
+/// 换 Status（"Active" / "Passive" / "NeedsAttention"）。
+pub fn Tray::set_status(self : Tray, status : String) -> Unit {
+  if self.status != status {
+    self.status = status
+    self.props_dirty = true
+  }
+}
+
+///|
+/// 把「属性变了」这件事告诉桌面。
+fn Tray::flush_props(self : Tray, server : @dbus.Server) -> Unit {
+  if !self.props_dirty {
+    return
+  }
+  let empty : Bytes = Bytes::makei(0, fn(_) { 0 })
+  self.props_dirty = false
+  self.icon_dirty = false
+  for sig in ["NewIcon", "NewTitle", "NewStatus"] {
+    let _ = @dbus.Server::emit_signal(
+      server, "/StatusNotifierItem", "org.kde.StatusNotifierItem", sig, empty, "",
+    )
+  }
+}
 
 ///|
 /// 只算回复、不碰总线，抽出来是为了能脱离 session bus 直接测。
@@ -344,16 +444,9 @@ fn Tray::handle(
       )
       self.menu.clear_dirty()
     }
-    // set_icon 之类改了图标，发 NewIcon 信号让桌面刷新
-    if self.icon_dirty {
-      let empty : Bytes = Bytes::makei(0, fn(_) { 0 })
-      let _ = @dbus.Server::emit_signal(
-        server, "/StatusNotifierItem", "org.kde.StatusNotifierItem", "NewIcon", empty,
-        "",
-      )
-      self.icon_dirty = false
-    }
   }
+  // 图标 / 标题 / 状态变了就通知桌面（set_icon、set_icon_name、set_title 都走这里）
+  self.flush_props(server)
   reply
 }
 
@@ -378,15 +471,15 @@ fn Tray::all_properties(self : Tray) -> Bytes {
     })
     dict.struct_with(fn(kv) {
       kv.string("Title")
-      kv.variant_string(self.cfg.title)
+      kv.variant_string(self.title)
     })
     dict.struct_with(fn(kv) {
       kv.string("Status")
-      kv.variant_string(self.cfg.status)
+      kv.variant_string(self.status)
     })
     dict.struct_with(fn(kv) {
       kv.string("IconName")
-      kv.variant_string(self.cfg.icon_name)
+      kv.variant_string(self.icon_name)
     })
     // 有像素图标时，额外提供 IconPixmap（桌面优先用它显示，否则用 IconName）
     if self.pixmap.length() > 0 {
@@ -422,11 +515,11 @@ fn Tray::property(self : Tray, prop : String) -> String {
   if prop == "Id" {
     self.cfg.id
   } else if prop == "Title" {
-    self.cfg.title
+    self.title
   } else if prop == "IconName" {
-    self.cfg.icon_name
+    self.icon_name
   } else if prop == "Status" {
-    self.cfg.status
+    self.status
   } else if prop == "Category" {
     self.cfg.category
   } else {

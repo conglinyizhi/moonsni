@@ -38,12 +38,13 @@ pub struct PixelIcon {
 
 ///|
 /// 图标校验错误。变体通过 pub(all) 暴露，供测试/高级开发者区分具体错误。
+#derive(Debug, Eq)
 pub(all) enum IconError {
   EmptySize
   NegativeSize
   TooLarge
   LengthMismatch
-} derive(Debug, Eq)
+}
 
 ///|
 pub extend IconError with Debug::{to_repr}

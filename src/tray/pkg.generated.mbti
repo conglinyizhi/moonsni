@@ -19,12 +19,13 @@ pub fn tray(TrayConfig) -> Tray
 // Errors
 
 // Types and methods
+#derive(Eq, @debug.Debug)
 pub(all) enum IconError {
   EmptySize
   NegativeSize
   TooLarge
   LengthMismatch
-} derive(Eq, @debug.Debug)
+}
 pub fn IconError::equal(Self, Self) -> Bool
 pub fn IconError::not_equal(Self, Self) -> Bool
 pub fn IconError::to_repr(Self) -> @debug.Repr
@@ -40,6 +41,10 @@ pub fn PixelIcon::validate(Self) -> Result[Unit, IconError]
 
 pub struct Tray {
   cfg : TrayConfig
+  mut icon_name : String
+  mut title : String
+  mut status : String
+  mut props_dirty : Bool
   menu : @menu.Menu
   mut revision : Int32
   pixmap : Array[PixelIcon]
@@ -60,8 +65,11 @@ pub fn Tray::pixmap_count(Self) -> Int32
 pub fn Tray::run(Self) -> Result[Unit, Int32]
 pub fn Tray::separator(Self) -> Unit
 pub fn Tray::set_icon(Self, PixelIcon) -> Result[Unit, IconError]
+pub fn Tray::set_icon_name(Self, String) -> Unit
 pub fn Tray::set_icon_unchecked(Self, PixelIcon) -> Unit
 pub fn Tray::set_icons(Self, Array[PixelIcon]) -> Result[Unit, IconError]
+pub fn Tray::set_status(Self, String) -> Unit
+pub fn Tray::set_title(Self, String) -> Unit
 pub fn Tray::submenu(Self, String, String) -> @menu.SubMenu
 
 pub struct TrayConfig {

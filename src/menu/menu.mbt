@@ -21,12 +21,13 @@
 
 ///|
 /// 菜单项类型。变体通过 `pub(all)` 暴露，供 dbusmenu 子包跨包匹配。
+#derive(Eq)
 pub(all) enum NodeKind {
   Action // 普通可点项
   Separator // 分割线
   Checkbox // 复选框
   Submenu // 子菜单容器
-} derive(Eq)
+}
 
 ///|
 pub extend NodeKind with Eq::{not_equal, equal}
